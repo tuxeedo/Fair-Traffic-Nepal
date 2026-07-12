@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { reportsAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import CameraCapture from '../../components/CameraCapture';
 
 const REPORT_TYPES = ['parking_suggestion','road_hazard','broken_traffic_light','construction','accident','missing_sign','pothole','flooding','other'];
 
@@ -9,6 +10,8 @@ export default function MyReports() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ report_type: 'road_hazard', title: '', description: '', gps_lat: '', gps_lng: '', address: '' });
+  const [file, setFile] = useState(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => { reportsAPI.my().then(res => setReports(res.data.results || [])).catch(() => {}).finally(() => setLoading(false)); }, []);
@@ -17,8 +20,11 @@ export default function MyReports() {
     e.preventDefault();
     const formData = new FormData();
     Object.entries(form).forEach(([k, v]) => { if (v) formData.append(k, v); });
+    if (file) {
+      formData.append('photo', file);
+    }
     try {
-      await reportsAPI.submit(formData); showToast('Report submitted!'); setShowForm(false);
+      await reportsAPI.submit(formData); showToast('Report submitted!'); setShowForm(false); setFile(null);
       const res = await reportsAPI.my(); setReports(res.data.results || []);
     } catch (err) { showToast('Failed to submit report', 'error'); }
   };
@@ -63,6 +69,16 @@ export default function MyReports() {
                   <button type="button" className="btn btn-ghost btn-sm" onClick={getLocation}>📍</button>
                 </div>
               </div>
+              <div className="form-group" style={{ gridColumn: '1/-1' }}>
+                <label className="form-label">Supporting Photo / Evidence</label>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <input type="file" accept="image/*,video/*" onChange={e => setFile(e.target.files[0])} style={{ color: 'var(--text-secondary)', flex: 1 }} />
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setIsCameraOpen(true)}>
+                    📸 Open Camera
+                  </button>
+                </div>
+                {file && <div style={{ marginTop: 8, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Selected: {file.name}</div>}
+              </div>
             </div>
             <button type="submit" className="btn btn-primary">Submit Report</button>
           </form>
@@ -85,6 +101,11 @@ export default function MyReports() {
           ))}
         </div>
       )}
+      <CameraCapture
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={(f) => { setFile(f); showToast('Photo captured successfully!'); }}
+      />
     </div>
   );
 }

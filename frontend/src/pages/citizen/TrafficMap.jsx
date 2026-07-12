@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import axios from 'axios';
+import CameraCapture from '../../components/CameraCapture';
 
 // Fix leaflet default icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -69,6 +70,16 @@ function createIcon(type) {
   });
 }
 
+function createPendingIcon(type) {
+  const emoji = LAYER_ICONS[type] || '❓';
+  return L.divIcon({
+    className: '',
+    html: `<div style="font-size:1.8rem;text-align:center;filter: drop-shadow(0 2px 4px rgba(245,158,11,0.6));opacity: 0.85;border: 2px dashed #f59e0b;border-radius: 50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,0.8)">${emoji}</div>`,
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+  });
+}
+
 function MapEventsHandler({ onMapClick }) {
   useMapEvents({
     click(e) {
@@ -94,6 +105,8 @@ export default function TrafficMap() {
   const [tempMarker, setTempMarker] = useState(null);
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [form, setForm] = useState({ name: '', type: '', description: '' });
+  const [file, setFile] = useState(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   const isOfficerOrAdmin = user?.role === 'officer' || user?.role === 'admin';
 
@@ -107,6 +120,18 @@ export default function TrafficMap() {
       return Math.sqrt(dLat * dLat + dLng * dLng) < 0.005;
     }).length;
   };
+
+  const handleReviewReport = async (reportId, action) => {
+    try {
+      await reportsAPI.review(reportId, { action, review_remarks: `Reviewed directly on Map by ${user?.name || 'Admin'}.` });
+      showToast(`Report ${action} successfully!`);
+      fetchData();
+    } catch {
+      showToast('Failed to review report.', 'error');
+    }
+  };
+
+  const pendingReports = isOfficerOrAdmin ? reports.filter(r => r.status === 'pending') : [];
 
   const fetchData = async () => {
     try {
@@ -209,12 +234,16 @@ export default function TrafficMap() {
         fd.append('gps_lat', tempMarker.lat.toFixed(7));
         fd.append('gps_lng', tempMarker.lng.toFixed(7));
         fd.append('description', form.description);
+        if (file) {
+          fd.append('photo', file);
+        }
 
         await reportsAPI.submit(fd);
         showToast('Report submitted for review!');
       }
       setShowSubmitForm(false);
       setTempMarker(null);
+      setFile(null);
       setForm({ name: '', type: '', description: '' });
       fetchData();
     } catch (err) {
@@ -334,13 +363,20 @@ export default function TrafficMap() {
                 </select>
               </div>
 
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setShowSubmitForm(false); setTempMarker(null); }}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary btn-sm">
-                  {isOfficerOrAdmin ? 'Publish' : 'Submit Report'}
-                </button>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setShowSubmitForm(false); setTempMarker(null); setFile(null); }}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={!isOfficerOrAdmin && !file}>
+                    {isOfficerOrAdmin ? 'Publish' : 'Submit Report'}
+                  </button>
+                </div>
+                {!isOfficerOrAdmin && !file && (
+                  <span style={{ color: 'var(--color-danger)', fontSize: '0.7rem', marginTop: 4 }}>
+                    ⚠️ Proof required
+                  </span>
+                )}
               </div>
 
               <div className="form-group" style={{ gridColumn: '1/3', margin: 0 }}>
@@ -353,6 +389,19 @@ export default function TrafficMap() {
                   placeholder="Provide brief details..."
                 />
               </div>
+
+              {!isOfficerOrAdmin && (
+                <div className="form-group" style={{ gridColumn: '1/-1', margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 4 }}>Supporting Image / Proof (Required) *</label>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input type="file" accept="image/*,video/*" onChange={e => setFile(e.target.files[0])} style={{ color: 'var(--text-secondary)', flex: 1, fontSize: '0.85rem' }} required />
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setIsCameraOpen(true)}>
+                      📸 Camera
+                    </button>
+                  </div>
+                  {file && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Selected: {file.name}</div>}
+                </div>
+              )}
 
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 Coords: {tempMarker.lat.toFixed(5)}, {tempMarker.lng.toFixed(5)}
@@ -400,10 +449,50 @@ export default function TrafficMap() {
                   ))}</>
                 </LayersControl.Overlay>
               ))}
+
+              {isOfficerOrAdmin && pendingReports.length > 0 && (
+                <LayersControl.Overlay checked name="⚠️ Pending Citizen Reports">
+                  <>{pendingReports.map(rep => {
+                    const mappedType = CITIZEN_REPORT_TYPES.find(c => c.value === rep.report_type)?.mapTo || 'other';
+                    return (
+                      <Marker key={rep.id} position={[parseFloat(rep.gps_lat), parseFloat(rep.gps_lng)]} icon={createPendingIcon(mappedType)}>
+                        <Popup>
+                          <div style={{ fontSize: '0.85rem', width: 220 }}>
+                            <h4 style={{ margin: '0 0 4px', fontWeight: 700 }}>{rep.title}</h4>
+                            <p style={{ margin: '0 0 6px', color: 'var(--text-secondary)' }}>{rep.description}</p>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
+                              <strong>Reporter:</strong> {rep.reporter_name}<br />
+                              <strong>Type:</strong> {rep.report_type.replace(/_/g, ' ')}
+                            </div>
+                            {rep.photo && (
+                              <div style={{ marginBottom: 8, borderRadius: 6, overflow: 'hidden' }}>
+                                <img src={rep.photo} alt="Report proof" style={{ width: '100%', height: 'auto', display: 'block' }} />
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                              <button className="btn btn-success btn-sm" style={{ flex: 1, padding: '4px 8px', fontSize: '0.75rem' }} onClick={() => handleReviewReport(rep.id, 'approved')}>
+                                Approve
+                              </button>
+                              <button className="btn btn-danger btn-sm" style={{ flex: 1, padding: '4px 8px', fontSize: '0.75rem' }} onClick={() => handleReviewReport(rep.id, 'rejected')}>
+                                Reject
+                              </button>
+                            </div>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    );
+                  })}</>
+                </LayersControl.Overlay>
+              )}
             </LayersControl>
           </MapContainer>
         </div>
       </div>
+      <CameraCapture
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={(f) => { setFile(f); showToast('Photo captured successfully!'); }}
+      />
     </div>
   );
 }

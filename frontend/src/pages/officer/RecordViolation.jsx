@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { usersAPI, vehiclesAPI, violationsAPI, evidenceAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import MapPickerModal from '../../components/MapPickerModal';
+import CameraCapture from '../../components/CameraCapture';
 
 export default function RecordViolation() {
   const [step, setStep] = useState(1);
@@ -15,6 +16,7 @@ export default function RecordViolation() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => { violationsAPI.types().then(res => setTypes(res.data.results || res.data)).catch(() => {}); }, []);
@@ -43,6 +45,16 @@ export default function RecordViolation() {
   const handleLocationSelect = (lat, lng) => {
     setForm({ ...form, gps_lat: lat, gps_lng: lng });
     showToast('Location selected from map!');
+  };
+
+  const handleCameraCapture = (file) => {
+    setFiles((prev) => [...prev, file]);
+    showToast('Photo captured and attached!');
+  };
+
+  const removeFile = (index) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+    showToast('File removed.');
   };
 
   const getLocation = () => {
@@ -148,10 +160,39 @@ export default function RecordViolation() {
             </div>
             <div className="form-group" style={{ gridColumn: '1/-1' }}><label className="form-label">Location Description</label><input className="form-input" value={form.location_description} onChange={e => setForm({...form, location_description: e.target.value})} placeholder="e.g. Near Ratnapark, Kathmandu" /></div>
             <div className="form-group" style={{ gridColumn: '1/-1' }}><label className="form-label">Officer Remarks</label><textarea className="form-input" value={form.officer_remarks} onChange={e => setForm({...form, officer_remarks: e.target.value})} placeholder="Additional notes..." /></div>
-            <div className="form-group" style={{ gridColumn: '1/-1' }}>
-              <label className="form-label">Evidence (Photos/Videos)</label>
-              <input type="file" multiple accept="image/*,video/*" onChange={e => setFiles(Array.from(e.target.files))} style={{ color: 'var(--text-secondary)' }} />
-              {files.length > 0 && <div style={{ marginTop: 8, fontSize: '0.8rem', color: 'var(--text-muted)' }}>{files.length} file(s) selected</div>}
+             <div className="form-group" style={{ gridColumn: '1/-1' }}>
+              <label className="form-label">Evidence (Photos/Videos) *</label>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+                <input type="file" multiple accept="image/*,video/*" onChange={e => setFiles(prev => [...prev, ...Array.from(e.target.files)])} style={{ color: 'var(--text-secondary)', flex: 1 }} />
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setIsCameraOpen(true)}>
+                  📸 Open Camera
+                </button>
+              </div>
+
+              {files.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 12, marginTop: 12 }}>
+                  {files.map((f, i) => {
+                    const isImg = f.type.startsWith('image/');
+                    const src = isImg ? URL.createObjectURL(f) : '';
+                    return (
+                      <div key={i} style={{ position: 'relative', width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.2)' }}>
+                        {isImg ? (
+                          <img src={src} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '1.5rem' }}>📹</div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeFile(i)}
+                          style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(239,68,68,0.8)', border: 'none', borderRadius: '50%', color: 'white', width: 18, height: 18, fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
@@ -211,6 +252,11 @@ export default function RecordViolation() {
         onSelect={handleLocationSelect}
         initialLat={parseFloat(form.gps_lat) || undefined}
         initialLng={parseFloat(form.gps_lng) || undefined}
+      />
+      <CameraCapture
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={handleCameraCapture}
       />
     </div>
   );

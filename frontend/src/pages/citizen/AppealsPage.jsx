@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { appealsAPI, violationsAPI } from '../../services/api';
+import { appealsAPI, violationsAPI, evidenceAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import CameraCapture from '../../components/CameraCapture';
 
 export default function AppealsPage() {
   const [appeals, setAppeals] = useState([]);
@@ -8,6 +9,8 @@ export default function AppealsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ violation: '', reason: '' });
+  const [file, setFile] = useState(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -20,7 +23,14 @@ export default function AppealsPage() {
     e.preventDefault();
     try {
       await appealsAPI.submit({ violation: parseInt(form.violation), reason: form.reason });
-      showToast('Appeal submitted!'); setShowForm(false); setForm({ violation: '', reason: '' });
+      if (file) {
+        const fd = new FormData();
+        fd.append('violation', parseInt(form.violation));
+        fd.append('file', file);
+        fd.append('evidence_type', file.type.startsWith('video') ? 'video' : 'photo');
+        await evidenceAPI.uploadCitizen(fd);
+      }
+      showToast('Appeal submitted!'); setShowForm(false); setForm({ violation: '', reason: '' }); setFile(null);
       const res = await appealsAPI.my(); setAppeals(res.data.results || []);
     } catch (err) { showToast(err.response?.data?.violation?.[0] || 'Failed to submit', 'error'); }
   };
@@ -45,6 +55,16 @@ export default function AppealsPage() {
               <label className="form-label">Reason for Appeal</label>
               <textarea className="form-input" value={form.reason} onChange={e => setForm({...form, reason: e.target.value})} placeholder="Explain why you believe this violation should be reconsidered..." required />
             </div>
+            <div className="form-group">
+              <label className="form-label">Supporting Evidence (Optional)</label>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <input type="file" accept="image/*,video/*" onChange={e => setFile(e.target.files[0])} style={{ color: 'var(--text-secondary)', flex: 1 }} />
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setIsCameraOpen(true)}>
+                  📸 Open Camera
+                </button>
+              </div>
+              {file && <div style={{ marginTop: 8, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Selected: {file.name}</div>}
+            </div>
             <button type="submit" className="btn btn-primary">Submit Appeal</button>
           </form>
         </div>
@@ -66,6 +86,11 @@ export default function AppealsPage() {
           ))}
         </div>
       )}
+      <CameraCapture
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={(f) => { setFile(f); showToast('Photo captured successfully!'); }}
+      />
     </div>
   );
 }
