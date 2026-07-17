@@ -31,4 +31,10 @@ urlpatterns = [
     path('safety-score/my/', views.MySafetyScoreView.as_view(), name='my_safety_score'),
     path('safety-score/my/history/', views.MySafetyScoreHistoryView.as_view(), name='my_safety_score_history'),
     path('safety-score/driver/<int:driver_id>/', views.DriverSafetyScoreView.as_view(), name='driver_safety_score'),
+
+    # Community Service
+    path('community-service/my/', views.MyCommunityServiceView.as_view(), name='my_community_service'),
+    path('community-service/all/', views.AllCommunityServiceView.as_view(), name='all_community_service'),
+    path('community-service/create/', views.CreateCommunityServiceView.as_view(), name='create_community_service'),
+    path('community-service/<int:pk>/', views.UpdateCommunityServiceView.as_view(), name='update_community_service'),
 ]

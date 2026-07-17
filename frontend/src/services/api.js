@@ -71,11 +71,25 @@ export const usersAPI = {
 // ─── Vehicles ───
 export const vehiclesAPI = {
   myVehicles: () => api.get('/vehicles/my/'),
-  addVehicle: (data) => api.post('/vehicles/my/', data),
-  updateVehicle: (id, data) => api.patch(`/vehicles/my/${id}/`, data),
+  addVehicle: (data) => api.post('/vehicles/my/', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  updateVehicle: (id, data) => api.patch(`/vehicles/my/${id}/`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
   deleteVehicle: (id) => api.delete(`/vehicles/my/${id}/`),
   search: (params) => api.get('/vehicles/search/', { params }),
   byOwner: (ownerId) => api.get(`/vehicles/owner/${ownerId}/`),
+  initiateTransfer: (data) => api.post('/vehicles/transfer/', data),
+  
+  // Admin Endpoints
+  pendingVerifications: () => api.get('/vehicles/admin/verifications/'),
+  approveVerification: (id) => api.post(`/vehicles/admin/verifications/${id}/approve/`),
+  rejectVerification: (id) => api.post(`/vehicles/admin/verifications/${id}/reject/`),
+  requestInfoVerification: (id) => api.post(`/vehicles/admin/verifications/${id}/request-info/`),
+  
+  pendingTransfers: () => api.get('/vehicles/admin/transfers/'),
+  approveTransfer: (id) => api.post(`/vehicles/admin/transfers/${id}/approve/`),
 };
 
 // ─── Violations ───
@@ -168,6 +182,14 @@ export const analyticsAPI = {
   officerPerformance: () => api.get('/analytics/officer-performance/'),
   appealStats: () => api.get('/analytics/appeal-stats/'),
   reportStats: () => api.get('/analytics/report-stats/'),
+};
+
+// ─── Community Service ───
+export const communityServiceAPI = {
+  myService: () => api.get('/violations/community-service/my/'),
+  allService: (params) => api.get('/violations/community-service/all/', { params }),
+  create: (data) => api.post('/violations/community-service/create/', data),
+  update: (id, data) => api.patch(`/violations/community-service/${id}/`, data),
 };
 
 // ─── Audit ───

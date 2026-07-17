@@ -8,13 +8,13 @@ from accounts.permissions import IsAdmin, IsOfficerOrAdmin, IsCitizen
 from vehicles.models import Vehicle
 from .models import (
     ViolationType, TrafficRule, Violation, Warning,
-    SafetyScore, SafetyScoreHistory,
+    SafetyScore, SafetyScoreHistory, CommunityService,
 )
 from .serializers import (
     ViolationTypeSerializer, TrafficRuleSerializer,
     ViolationSerializer, RecordViolationSerializer,
     SafetyScoreSerializer, SafetyScoreHistorySerializer,
-    WarningSerializer, PayFineSerializer,
+    WarningSerializer, PayFineSerializer, CommunityServiceSerializer,
 )
 from .rule_engine import evaluate_violation, update_safety_score
 
@@ -335,3 +335,52 @@ class DriverSafetyScoreView(APIView):
             defaults={'current_score': conf.SAFETY_SCORE_INITIAL},
         )
         return Response(SafetyScoreSerializer(score).data)
+
+# ─── Community Service ───────────────────────────────────────────────────────
+
+class MyCommunityServiceView(generics.ListAPIView):
+    """Citizen: view own assigned community service."""
+    serializer_class = CommunityServiceSerializer
+    permission_classes = [IsCitizen]
+
+    def get_queryset(self):
+        return CommunityService.objects.filter(driver=self.request.user).order_by('-created_at')
+
+class AllCommunityServiceView(generics.ListAPIView):
+    """Admin/Officer: view all community service records."""
+    serializer_class = CommunityServiceSerializer
+    permission_classes = [IsOfficerOrAdmin]
+    queryset = CommunityService.objects.all().order_by('-created_at')
+    filterset_fields = ['status']
+    search_fields = ['driver__first_name', 'driver__last_name']
+
+class UpdateCommunityServiceView(generics.UpdateAPIView):
+    """Admin/Officer: update community service hours."""
+    serializer_class = CommunityServiceSerializer
+    permission_classes = [IsOfficerOrAdmin]
+    queryset = CommunityService.objects.all()
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        completed_hours = request.data.get('completed_hours')
+        
+        if completed_hours is not None:
+            instance.completed_hours = min(int(completed_hours), instance.assigned_hours)
+            if instance.completed_hours >= instance.assigned_hours:
+                instance.status = CommunityService.Status.COMPLETED
+            elif instance.completed_hours > 0:
+                instance.status = CommunityService.Status.IN_PROGRESS
+            instance.save()
+            return Response(self.get_serializer(instance).data)
+        
+        return Response({'error': 'completed_hours is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+class CreateCommunityServiceView(generics.CreateAPIView):
+    """Admin/Officer: Manually assign community service."""
+    serializer_class = CommunityServiceSerializer
+    permission_classes = [IsOfficerOrAdmin]
+
+    def perform_create(self, serializer):
+        violation_id = self.request.data.get('violation_id')
+        violation = generics.get_object_or_404(Violation, id=violation_id)
+        serializer.save(violation=violation, driver=violation.driver)

@@ -42,6 +42,7 @@ class TrafficRule(models.Model):
         FINE = 'fine', 'Fine'
         INCREASED_FINE = 'increased_fine', 'Increased Fine'
         LICENSE_SUSPENSION = 'license_suspension', 'License Suspension'
+        COMMUNITY_SERVICE = 'community_service', 'Community Service'
 
     violation_type = models.ForeignKey(
         ViolationType,
@@ -93,6 +94,7 @@ class Violation(models.Model):
     class ActionTaken(models.TextChoices):
         WARNING = 'warning', 'Warning'
         FINE = 'fine', 'Fine'
+        COMMUNITY_SERVICE = 'community_service', 'Community Service'
 
     driver = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -116,7 +118,7 @@ class Violation(models.Model):
         on_delete=models.PROTECT,
         related_name='violations',
     )
-    action_taken = models.CharField(max_length=10, choices=ActionTaken.choices)
+    action_taken = models.CharField(max_length=20, choices=ActionTaken.choices)
     fine_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_paid = models.BooleanField(default=False)
     paid_at = models.DateTimeField(null=True, blank=True)
@@ -201,3 +203,40 @@ class SafetyScoreHistory(models.Model):
     def __str__(self):
         change_str = f"+{self.score_change}" if self.score_change > 0 else str(self.score_change)
         return f"{self.driver} {change_str} ({self.reason})"
+
+
+class Payment(models.Model):
+    """Payment record for a fine."""
+    violation = models.ForeignKey(
+        Violation,
+        on_delete=models.CASCADE,
+        related_name='payments',
+    )
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_date = models.DateTimeField(auto_now_add=True)
+    transaction_id = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        ordering = ['-payment_date']
+
+    def __str__(self):
+        return f"Payment of {self.amount_paid} for violation #{self.violation_id}"
+
+
+class CommunityService(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        IN_PROGRESS = 'in_progress', 'In Progress'
+        COMPLETED = 'completed', 'Completed'
+
+    violation = models.OneToOneField(Violation, on_delete=models.CASCADE, related_name='community_service')
+    driver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='community_services')
+    assigned_hours = models.PositiveIntegerField()
+    completed_hours = models.PositiveIntegerField(default=0)
+    service_type = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.driver} - {self.completed_hours}/{self.assigned_hours} hrs"

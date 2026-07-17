@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import (
     ViolationType, TrafficRule, Violation, Warning,
-    SafetyScore, SafetyScoreHistory,
+    SafetyScore, SafetyScoreHistory, CommunityService
 )
 
 User = get_user_model()
@@ -128,3 +128,17 @@ class PayFineSerializer(serializers.Serializer):
         default='esewa',
     )
     transaction_reference = serializers.CharField(max_length=100, required=False, default='')
+
+class CommunityServiceSerializer(serializers.ModelSerializer):
+    driver_name = serializers.CharField(source='driver.get_full_name', read_only=True)
+    violation_details = serializers.CharField(source='violation.violation_type.name', read_only=True)
+    violation_date = serializers.DateTimeField(source='violation.created_at', read_only=True)
+
+    class Meta:
+        model = CommunityService
+        fields = [
+            'id', 'violation', 'violation_details', 'violation_date',
+            'driver', 'driver_name', 'assigned_hours', 'completed_hours',
+            'service_type', 'status', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'violation', 'driver', 'created_at', 'updated_at']

@@ -15,6 +15,7 @@ const NAV_ITEMS = {
     { path: '/citizen/reports', icon: '📢', label: 'Reports' },
     { path: '/citizen/notifications', icon: '🔔', label: 'Notifications' },
     { path: '/citizen/complaints', icon: '🛡️', label: 'Officer Complaints' },
+    { path: '/citizen/community-service', icon: '🧹', label: 'Community Service' },
   ],
   officer: [
     { path: '/officer/dashboard', icon: '📊', label: 'Dashboard' },
@@ -24,6 +25,7 @@ const NAV_ITEMS = {
     { path: '/officer/locations', icon: '📍', label: 'Map Locations' },
     { path: '/officer/reports', icon: '📢', label: 'Verify Reports' },
     { path: '/officer/stats', icon: '📈', label: 'My Stats' },
+    { path: '/officer/community-service', icon: '🧹', label: 'Community Service' },
   ],
   admin: [
     { path: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
@@ -38,6 +40,9 @@ const NAV_ITEMS = {
     { path: '/admin/analytics', icon: '📈', label: 'Analytics' },
     { path: '/admin/heatmap', icon: '🔥', label: 'Heatmap' },
     { path: '/admin/audit', icon: '📜', label: 'Audit Log' },
+    { path: '/admin/verifications', icon: '🚙', label: 'Verifications' },
+    { path: '/admin/transfers', icon: '🔄', label: 'Transfers' },
+    { path: '/admin/community-service', icon: '🧹', label: 'Community Service' },
   ],
 };
 
