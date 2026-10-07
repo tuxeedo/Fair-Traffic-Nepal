@@ -6,6 +6,7 @@ Smart Traffic Violation Management and Driver Awareness System.
 import os
 from pathlib import Path
 from datetime import timedelta
+import dj_database_url
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -23,8 +24,9 @@ SECRET_KEY = os.environ.get(
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = os.environ.get(
-    'DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,*'
+    'DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com,*'
 ).split(',')
+
 
 # ---------------------------------------------------------------------------
 # Installed Applications
@@ -95,26 +97,16 @@ TEMPLATES = [
 ]
 
 # ---------------------------------------------------------------------------
-# Database — SQLite for development, PostgreSQL for production
+# Database — SQLite for development, PostgreSQL/DATABASE_URL for production
 # ---------------------------------------------------------------------------
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
-# Uncomment for PostgreSQL:
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': os.environ.get('DB_NAME', 'fairtraffic'),
-#         'USER': os.environ.get('DB_USER', 'postgres'),
-#         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-#         'HOST': os.environ.get('DB_HOST', 'localhost'),
-#         'PORT': os.environ.get('DB_PORT', '5432'),
-#     }
-# }
 
 # ---------------------------------------------------------------------------
 # Custom User Model
@@ -171,9 +163,20 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5173',
 ]
 
-# Allow all origins in production (HuggingFace Spaces)
-CORS_ALLOW_ALL_ORIGINS = os.environ.get('DJANGO_DEBUG', 'True').lower() not in ('true', '1', 'yes')
+# Allow custom origins from environment variable (comma separated)
+if os.environ.get('CORS_ALLOWED_ORIGINS'):
+    CORS_ALLOWED_ORIGINS.extend([
+        origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS').split(',') if origin.strip()
+    ])
+
+# Allow all Vercel and Render preview/production origins automatically
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+    r"^https://.*\.onrender\.com$",
+]
+
 CORS_ALLOW_CREDENTIALS = True
+
 
 # ---------------------------------------------------------------------------
 # Internationalization

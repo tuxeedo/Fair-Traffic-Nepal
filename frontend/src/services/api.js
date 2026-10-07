@@ -1,11 +1,21 @@
 import axios from 'axios';
 
-const API_BASE = '/api/v1';
+const getApiBase = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl) {
+    const cleanUrl = envUrl.replace(/\/$/, '');
+    return cleanUrl.endsWith('/api/v1') ? cleanUrl : `${cleanUrl}/api/v1`;
+  }
+  return '/api/v1';
+};
+
+const API_BASE = getApiBase();
 
 const api = axios.create({
   baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
 });
+
 
 // Attach JWT token to every request
 api.interceptors.request.use((config) => {
