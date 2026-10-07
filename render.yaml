@@ -3,7 +3,7 @@ services:
     name: fairtraffic-backend
     env: python
     plan: free
-    buildCommand: "./backend/build.sh"
+    buildCommand: "cd backend && pip install --upgrade pip && pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate && (python seed_government_registry.py || true) && (python create_demo_rules.py || true) && (python create_demo_users.py || true)"
     startCommand: "gunicorn --chdir backend fairtraffic.wsgi:application --bind 0.0.0.0:$PORT"
     envVars:
       - key: DATABASE_URL
@@ -16,6 +16,8 @@ services:
         value: "False"
       - key: DJANGO_ALLOWED_HOSTS
         value: ".onrender.com"
+      - key: PYTHON_VERSION
+        value: "3.11.9"
 
 databases:
   - name: fairtraffic-db
