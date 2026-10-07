@@ -2,6 +2,7 @@ services:
   - type: web
     name: fairtraffic-backend
     env: python
+    plan: free
     buildCommand: "./backend/build.sh"
     startCommand: "gunicorn --chdir backend fairtraffic.wsgi:application --bind 0.0.0.0:$PORT"
     envVars:
@@ -15,10 +16,9 @@ services:
         value: "False"
       - key: DJANGO_ALLOWED_HOSTS
         value: ".onrender.com"
-      - key: PYTHON_VERSION
-        value: "3.11.9"
 
 databases:
   - name: fairtraffic-db
     databaseName: fairtraffic
     user: fairtraffic_user
+    plan: free
