@@ -25,8 +25,7 @@ TestResults.xml
 # Python virtual environment
 .venv/
 
-# Evidence and media directories/files
-evidence/
+# Media upload directories (NOT the Django app)
 backend/media/
 media/
 Traffic_system/
