@@ -3,7 +3,7 @@ services:
     name: fairtraffic-backend
     env: python
     plan: free
-    buildCommand: "cd backend && pip install --upgrade pip && pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate && (python seed_government_registry.py || true) && (python create_demo_rules.py || true) && (python create_demo_users.py || true)"
+    buildCommand: "./backend/build.sh"
     startCommand: "gunicorn --chdir backend fairtraffic.wsgi:application --bind 0.0.0.0:$PORT"
     envVars:
       - key: DATABASE_URL
