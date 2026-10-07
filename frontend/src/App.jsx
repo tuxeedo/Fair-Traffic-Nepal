@@ -20,6 +20,7 @@ import NotificationsPage from './pages/citizen/NotificationsPage';
 import PayFinePage from './pages/citizen/PayFinePage';
 import ComplaintsPage from './pages/citizen/ComplaintsPage';
 import MyCommunityService from './pages/citizen/MyCommunityService';
+import TrafficSignsPage from './pages/citizen/TrafficSignsPage';
 
 // Officer pages
 import OfficerDashboard from './pages/officer/OfficerDashboard';
@@ -44,8 +45,10 @@ import AnalyticsPage from './pages/admin/AnalyticsPage';
 import HeatmapPage from './pages/admin/HeatmapPage';
 import AuditLogPage from './pages/admin/AuditLogPage';
 import VerifyVehicles from './pages/admin/VerifyVehicles';
-import VerifyTransfers from './pages/admin/VerifyTransfers';
 import ManageCommunityService from './pages/admin/ManageCommunityService';
+import ReviewCorrections from './pages/admin/ReviewCorrections';
+
+
 
 import './index.css';
 
@@ -89,6 +92,7 @@ export default function App() {
               <Route path="pay/:id" element={<PayFinePage />} />
               <Route path="complaints" element={<ComplaintsPage />} />
               <Route path="community-service" element={<MyCommunityService />} />
+              <Route path="traffic-signs" element={<TrafficSignsPage />} />
             </Route>
 
             {/* Officer routes */}
@@ -100,6 +104,7 @@ export default function App() {
               <Route path="locations" element={<OfficerLocations />} />
               <Route path="reports" element={<VerifyReports />} />
               <Route path="stats" element={<OfficerStats />} />
+              <Route path="notifications" element={<NotificationsPage />} />
               <Route path="community-service" element={<ManageCommunityService />} />
             </Route>
 
@@ -118,8 +123,9 @@ export default function App() {
               <Route path="heatmap" element={<HeatmapPage />} />
               <Route path="audit" element={<AuditLogPage />} />
               <Route path="verifications" element={<VerifyVehicles />} />
-              <Route path="transfers" element={<VerifyTransfers />} />
               <Route path="community-service" element={<ManageCommunityService />} />
+              <Route path="corrections" element={<ReviewCorrections />} />
+              <Route path="notifications" element={<NotificationsPage />} />
             </Route>
 
             {/* Catch all */}

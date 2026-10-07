@@ -100,33 +100,32 @@ def evaluate_violation(driver, violation_type):
 def update_safety_score(driver, violation, action_taken):
     """
     Update the driver's safety score based on the violation and action.
-
-    Score deltas (from settings):
-        Minor warning:      SAFETY_SCORE_MINOR_WARNING  (-2)
-        Minor fine:          SAFETY_SCORE_MINOR_FINE     (-5)
-        Dangerous violation: SAFETY_SCORE_DANGEROUS      (-20)
+    Points are deducted based on the violation_type's score_deduction,
+    unless the action_taken is a warning (which does not deduct points).
     """
     score_obj, created = SafetyScore.objects.get_or_create(
         driver=driver,
-        defaults={'current_score': settings.SAFETY_SCORE_INITIAL},
+        defaults={'current_score': getattr(settings, 'SAFETY_SCORE_INITIAL', 100)},
     )
 
-    category = violation.violation_type.category
+    # Don't deduct points for warnings based on the new logic.
+    if action_taken == 'warning':
+        return score_obj
 
-    if category == 'dangerous':
-        delta = settings.SAFETY_SCORE_DANGEROUS
-        reason = f'Dangerous violation: {violation.violation_type.name}'
-    elif action_taken == 'warning':
-        delta = settings.SAFETY_SCORE_MINOR_WARNING
-        reason = f'Warning: {violation.violation_type.name}'
-    else:  # fine
-        delta = settings.SAFETY_SCORE_MINOR_FINE
-        reason = f'Fine: {violation.violation_type.name}'
+    deduction = violation.violation_type.score_deduction
+    if deduction <= 0:
+        return score_obj
+
+    delta = -deduction
+    reason = f'Penalty for: {violation.violation_type.name}'
 
     previous_score = score_obj.current_score
+    min_score = getattr(settings, 'SAFETY_SCORE_MIN', 0)
+    max_score = getattr(settings, 'SAFETY_SCORE_MAX', 100)
+    
     new_score = max(
-        settings.SAFETY_SCORE_MIN,
-        min(settings.SAFETY_SCORE_MAX, previous_score + delta),
+        min_score,
+        min(max_score, previous_score + delta),
     )
     score_obj.current_score = new_score
     score_obj.save()

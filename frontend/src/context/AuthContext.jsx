@@ -7,6 +7,17 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Initialize theme globally from localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
+
+  const clearAuthTokens = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+  };
+
   const fetchProfile = useCallback(async () => {
     const token = localStorage.getItem('access_token');
     if (!token) {
@@ -17,7 +28,7 @@ export function AuthProvider({ children }) {
       const res = await authAPI.getProfile();
       setUser(res.data);
     } catch {
-      localStorage.clear();
+      clearAuthTokens();
       setUser(null);
     } finally {
       setLoading(false);
@@ -42,9 +53,17 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    localStorage.clear();
+    clearAuthTokens();
     setUser(null);
   };
+
+
+  const isCitizenProfileComplete = Boolean(
+    user &&
+    (user.role !== 'citizen' ||
+      (user.phone && (user.citizenship_number || user.nid_number) && user.address))
+  );
+
 
   const value = {
     user,
@@ -57,6 +76,7 @@ export function AuthProvider({ children }) {
     isCitizen: user?.role === 'citizen',
     isOfficer: user?.role === 'officer',
     isAdmin: user?.role === 'admin',
+    isProfileComplete: isCitizenProfileComplete,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

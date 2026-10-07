@@ -35,6 +35,7 @@ class RuleEngineTestCase(TestCase):
             code='NO_HELMET',
             category='minor',
             base_fine_amount=500,
+            score_deduction=5,
         )
 
         # Rules for helmet:
@@ -94,9 +95,9 @@ class RuleEngineTestCase(TestCase):
             fine_amount=0,
         )
 
-        # Update score
-        score_obj = update_safety_score(self.driver, violation, 'warning')
-        self.assertEqual(score_obj.current_score, 98)  # 100 - 2 (minor warning delta)
+        # Update score with fine
+        score_obj = update_safety_score(self.driver, violation, 'fine')
+        self.assertEqual(score_obj.current_score, 95)  # 100 - 5 (minor fine delta)
 
         # Create fine violation
         violation_fine = Violation.objects.create(
@@ -107,9 +108,9 @@ class RuleEngineTestCase(TestCase):
             fine_amount=500,
         )
         score_obj = update_safety_score(self.driver, violation_fine, 'fine')
-        self.assertEqual(score_obj.current_score, 93)  # 98 - 5 (minor fine delta)
+        self.assertEqual(score_obj.current_score, 90)  # 95 - 5 (minor fine delta)
 
         # Restore fine violation points on appeal
         restore_safety_score(self.driver, violation_fine)
         score_obj.refresh_from_db()
-        self.assertEqual(score_obj.current_score, 98)  # restored 5 points
+        self.assertEqual(score_obj.current_score, 95)  # restored 5 points

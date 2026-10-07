@@ -5,12 +5,10 @@ from django.shortcuts import get_object_or_404
 from accounts.permissions import IsOfficerOrAdmin, IsCitizen, IsAdmin
 from django.contrib.auth import get_user_model
 
-from .models import Vehicle, OwnershipHistory
+from .models import Vehicle
 from .serializers import (
     VehicleSerializer, 
     VehicleListSerializer,
-    OwnershipHistorySerializer,
-    InitiateTransferSerializer
 )
 
 User = get_user_model()
@@ -22,6 +20,31 @@ class MyVehicleListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         return Vehicle.objects.filter(owner=self.request.user)
+
+    def perform_create(self, serializer):
+        vehicle = serializer.save(owner=self.request.user)
+        from notifications.models import Notification
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        # Notify owner
+        Notification.objects.create(
+            user=self.request.user,
+            title="Vehicle Registered",
+            message=f"Your vehicle {vehicle.registration_number} has been registered and is pending admin verification.",
+            notification_type='system',
+            related_object_id=vehicle.id,
+        )
+
+        # Notify admins
+        for admin_user in User.objects.filter(role='admin', is_active=True):
+            Notification.objects.create(
+                user=admin_user,
+                title="New Vehicle Pending Verification",
+                message=f"Citizen {self.request.user.get_full_name()} registered vehicle {vehicle.registration_number} awaiting verification.",
+                notification_type='system',
+                related_object_id=vehicle.id,
+            )
 
 class MyVehicleDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Citizen: view, update, or remove own vehicle."""
@@ -67,6 +90,15 @@ class AdminApproveVerificationView(APIView):
         vehicle = get_object_or_404(Vehicle, pk=pk)
         vehicle.verification_status = Vehicle.VerificationStatus.VERIFIED
         vehicle.save()
+
+        from notifications.models import Notification
+        Notification.objects.create(
+            user=vehicle.owner,
+            title="Vehicle Verified",
+            message=f"Your vehicle {vehicle.registration_number} has been officially verified by traffic admins.",
+            notification_type='system',
+            related_object_id=vehicle.id,
+        )
         return Response({"status": "Verified"})
 
 class AdminRejectVerificationView(APIView):
@@ -75,6 +107,15 @@ class AdminRejectVerificationView(APIView):
         vehicle = get_object_or_404(Vehicle, pk=pk)
         vehicle.verification_status = Vehicle.VerificationStatus.REJECTED
         vehicle.save()
+
+        from notifications.models import Notification
+        Notification.objects.create(
+            user=vehicle.owner,
+            title="Vehicle Verification Rejected",
+            message=f"Verification for vehicle {vehicle.registration_number} was rejected.",
+            notification_type='system',
+            related_object_id=vehicle.id,
+        )
         return Response({"status": "Rejected"})
 
 class AdminRequestInfoVerificationView(APIView):
@@ -83,39 +124,13 @@ class AdminRequestInfoVerificationView(APIView):
         vehicle = get_object_or_404(Vehicle, pk=pk)
         vehicle.verification_status = Vehicle.VerificationStatus.INFO_REQUESTED
         vehicle.save()
-        return Response({"status": "Info Requested"})
-        
-class InitiateTransferView(APIView):
-    """Citizen: initiate transfer to new owner email"""
-    permission_classes = [IsCitizen]
-    def post(self, request):
-        serializer = InitiateTransferSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        vehicle = get_object_or_404(Vehicle, pk=serializer.validated_data['vehicle_id'], owner=request.user)
-        new_owner = get_object_or_404(User, email=serializer.validated_data['new_owner_email'])
-        
-        transfer = OwnershipHistory.objects.create(
-            vehicle=vehicle,
-            previous_owner=request.user,
-            new_owner=new_owner,
-            status=OwnershipHistory.TransferStatus.PENDING
+
+        from notifications.models import Notification
+        Notification.objects.create(
+            user=vehicle.owner,
+            title="Vehicle Info Requested",
+            message=f"Admin requested additional information for vehicle {vehicle.registration_number}.",
+            notification_type='system',
+            related_object_id=vehicle.id,
         )
-        return Response(OwnershipHistorySerializer(transfer).data)
-
-class AdminPendingTransfersView(generics.ListAPIView):
-    """Admin: list pending transfers."""
-    serializer_class = OwnershipHistorySerializer
-    permission_classes = [IsAdmin]
-    queryset = OwnershipHistory.objects.filter(status=OwnershipHistory.TransferStatus.PENDING)
-
-class AdminApproveTransferView(APIView):
-    permission_classes = [IsAdmin]
-    def post(self, request, pk):
-        transfer = get_object_or_404(OwnershipHistory, pk=pk)
-        transfer.status = OwnershipHistory.TransferStatus.APPROVED
-        transfer.save()
-        
-        vehicle = transfer.vehicle
-        vehicle.owner = transfer.new_owner
-        vehicle.save()
-        return Response({"status": "Transfer Approved"})
+        return Response({"status": "Info Requested"})

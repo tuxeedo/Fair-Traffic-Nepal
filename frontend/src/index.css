@@ -1,13 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@500;600;700;800&display=swap');
 @import "tailwindcss";
 
 /* ─── CSS Custom Properties (Design Tokens) ─── */
-:root {
+:root,
+[data-theme="dark"] {
   /* Refined, cohesive brand colors (Indigo/Violet tint) */
   --color-primary: #4f46e5;
   --color-primary-hover: #6366f1;
   --color-primary-active: #4338ca;
+  --color-primary-light: #818cf8;
 
-  /* Semantic Colors - Softened for modern dark mode */
+  /* Semantic Colors */
   --color-accent: #0ea5e9;
   --color-success: #10b981;
   --color-warning: #f59e0b;
@@ -18,20 +21,23 @@
   --bg-surface: #18181b;
   --bg-surface-raised: #27272a;
   --bg-surface-hover: rgba(255, 255, 255, 0.04);
+  --bg-sidebar: #121215;
+  --bg-secondary: #18181b;
 
   /* Typography */
   --text-primary: #fafafa;
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
 
-  /* Borders & Shadows - Crisp and subtle */
+  /* Borders & Shadows */
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.15);
+  --border-color: rgba(255, 255, 255, 0.08);
   --border-radius: 12px;
   --radius-sm: 8px;
   --radius-full: 9999px;
 
-  /* Layered, realistic shadows instead of artificial glows */
+  /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
@@ -42,10 +48,40 @@
   --ease-out: cubic-bezier(0.4, 0, 0.2, 1);
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-syne: 'Syne', system-ui, -apple-system, sans-serif;
 }
 
-/* ─── Google Font Import ─── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+[data-theme="light"] {
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-active: #3730a3;
+  --color-primary-light: #4f46e5;
+
+  --color-accent: #0284c7;
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+
+  --bg-base: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-raised: #f1f5f9;
+  --bg-surface-hover: rgba(0, 0, 0, 0.04);
+  --bg-sidebar: #ffffff;
+  --bg-secondary: #ffffff;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.16);
+  --border-color: rgba(0, 0, 0, 0.08);
+
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --shadow-modal: 0 20px 40px -10px rgba(0, 0, 0, 0.2);
+}
 
 /* ─── Global Reset ─── */
 *,
@@ -76,13 +112,12 @@ body {
 a {
   color: var(--text-primary);
   text-decoration: none;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: none;
   transition: all 0.2s var(--ease-out);
 }
 
 a:hover {
-  color: var(--color-primary-hover);
-  border-bottom-color: var(--color-primary-hover);
+  color: var(--color-primary-light);
 }
 
 /* ─── Scrollbar (Minimalist) ─── */
@@ -120,32 +155,46 @@ a:hover {
 }
 
 /* ─── Buttons (Modern, Flat, Interactive) ─── */
+button,
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 10px 20px;
   font-size: 0.875rem;
   font-weight: 500;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s var(--ease-out);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), filter 0.2s var(--ease-out);
   font-family: var(--font-sans);
   white-space: nowrap;
   user-select: none;
 }
 
-.btn:active:not(:disabled) {
-  transform: scale(0.97);
+button:hover:not(:disabled),
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
+button:active:not(:disabled),
+.btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+  box-shadow: var(--shadow-sm);
+}
+
+button:disabled,
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
+button:focus-visible,
 .btn:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
@@ -154,12 +203,12 @@ a:hover {
 .btn-primary {
   background: var(--color-primary);
   color: white;
-  /* Subtle inner top highlight to make it feel tactile */
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), var(--shadow-sm);
 }
 
 .btn-primary:hover:not(:disabled) {
   background: var(--color-primary-hover);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 8px 20px -4px rgba(79, 70, 229, 0.4);
 }
 
 .btn-accent {
@@ -170,28 +219,41 @@ a:hover {
 
 .btn-accent:hover:not(:disabled) {
   filter: brightness(1.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 20px -4px rgba(14, 165, 233, 0.4);
 }
 
 .btn-success {
   background: var(--color-success);
   color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow-sm);
+}
+
+.btn-success:hover:not(:disabled) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 20px -4px rgba(16, 185, 129, 0.4);
 }
 
 .btn-danger {
   background: var(--color-danger);
   color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--shadow-sm);
+}
+
+.btn-danger:hover:not(:disabled) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 20px -4px rgba(239, 68, 68, 0.4);
 }
 
 .btn-ghost {
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid var(--border-subtle);
+  box-shadow: none;
 }
 
 .btn-ghost:hover:not(:disabled) {
   background: var(--bg-surface-raised);
   color: var(--text-primary);
   border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-sm {
@@ -354,27 +416,58 @@ textarea.form-input {
 
 /* ─── Stat Card ─── */
 .stat-card {
-  padding: 24px;
-  border-radius: var(--border-radius);
+  padding: 20px 22px;
+  border-radius: 14px;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
+  transition: all 0.2s var(--ease-out);
 }
 
-.stat-value {
-  font-size: 1.875rem;
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  color: var(--text-primary);
+.stat-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* ─── Logo Interactive Branding ─── */
+.logo-brand-trigger {
+  transition: opacity 0.2s var(--ease-out);
+}
+
+.logo-brand-trigger:hover .logo-icon-box {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4) !important;
+}
+
+.logo-brand-trigger:hover span:first-child {
+  color: var(--color-primary-light);
 }
 
 .stat-label {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--text-secondary);
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.stat-subtext {
+  font-size: 0.75rem;
   font-weight: 500;
+  color: var(--text-muted);
 }
 
 /* ─── Modal (Focused, cinematic background) ─── */
@@ -573,4 +666,139 @@ textarea.form-input {
   border: 1px solid var(--border-strong);
   color: var(--text-primary);
   border-left: 4px solid var(--color-danger);
+}
+
+/* ─── Avatar Popover Dropdown ─── */
+.avatar-popover {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 280px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-modal);
+  padding: 16px;
+  z-index: 100;
+  animation: popoverFadeIn 0.2s var(--ease-spring);
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ─── Toggle Switch ─── */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--bg-surface-raised);
+  border: 1px solid var(--border-strong);
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--text-primary);
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+  background-color: white;
+}
+
+/* ─── Quick Action Cards ─── */
+.quick-action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.quick-action-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-md);
+  background: var(--bg-surface-raised);
+}
+
+.quick-action-icon {
+  font-size: 1.8rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--bg-surface-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Driver Rank Badge ─── */
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: none;
+}
+
+.rank-gold {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.rank-silver {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0ea5e9;
+}
+
+.rank-caution {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
 }

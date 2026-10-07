@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Vehicle, VehicleDocuments, OwnershipHistory
+from .models import Vehicle, VehicleDocuments
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -39,6 +39,23 @@ class VehicleSerializer(serializers.ModelSerializer):
             VehicleDocuments.objects.create(vehicle=vehicle, bluebook_front_image=front_img, bluebook_back_image=back_img)
         return vehicle
 
+    def update(self, instance, validated_data):
+        front_img = validated_data.pop('bluebook_front_image', None)
+        back_img = validated_data.pop('bluebook_back_image', None)
+        
+        vehicle = super().update(instance, validated_data)
+        
+        if front_img or back_img:
+            docs, _ = VehicleDocuments.objects.get_or_create(vehicle=vehicle)
+            if front_img:
+                docs.bluebook_front_image = front_img
+            if back_img:
+                docs.bluebook_back_image = back_img
+            docs.save()
+            
+        return vehicle
+
+
 
 class VehicleListSerializer(serializers.ModelSerializer):
     """Lightweight vehicle serializer for listings and search results."""
@@ -50,17 +67,3 @@ class VehicleListSerializer(serializers.ModelSerializer):
             'id', 'owner', 'owner_name', 'registration_number',
             'vehicle_type', 'brand', 'model', 'registration_date', 'color', 'is_active', 'verification_status'
         ]
-
-class OwnershipHistorySerializer(serializers.ModelSerializer):
-    previous_owner_name = serializers.CharField(source='previous_owner.get_full_name', read_only=True)
-    new_owner_name = serializers.CharField(source='new_owner.get_full_name', read_only=True)
-    vehicle_number = serializers.CharField(source='vehicle.registration_number', read_only=True)
-
-    class Meta:
-        model = OwnershipHistory
-        fields = ['id', 'vehicle', 'vehicle_number', 'previous_owner', 'previous_owner_name', 'new_owner', 'new_owner_name', 'transfer_date', 'status']
-        read_only_fields = ['id', 'transfer_date', 'status']
-
-class InitiateTransferSerializer(serializers.Serializer):
-    new_owner_email = serializers.EmailField()
-    vehicle_id = serializers.IntegerField()

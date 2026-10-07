@@ -9,14 +9,16 @@ class ViolationType(models.Model):
     """
 
     class Category(models.TextChoices):
-        MINOR = 'minor', 'Minor'
-        MAJOR = 'major', 'Major'
-        DANGEROUS = 'dangerous', 'Dangerous'
+        EDUCATIONAL = 'educational', 'Level 1 - Educational'
+        MODERATE = 'moderate', 'Level 2 - Moderate'
+        DANGEROUS = 'dangerous', 'Level 3 - Dangerous'
+        CRITICAL = 'critical', 'Level 4 - Critical'
 
     name = models.CharField(max_length=100, unique=True)
     code = models.CharField(max_length=20, unique=True, help_text='Short code, e.g. NO_HELMET')
-    category = models.CharField(max_length=10, choices=Category.choices, default=Category.MINOR)
+    category = models.CharField(max_length=15, choices=Category.choices, default=Category.EDUCATIONAL)
     base_fine_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    score_deduction = models.PositiveIntegerField(default=0, help_text='Points to deduct from driver score')
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -175,6 +177,25 @@ class SafetyScore(models.Model):
 
     def __str__(self):
         return f"{self.driver} — Score: {self.current_score}"
+
+    def award_points(self, amount, reason):
+        """Award points to the driver (e.g., good behavior, community service)."""
+        previous_score = self.current_score
+        max_score = getattr(settings, 'SAFETY_SCORE_MAX', 100)
+        new_score = min(max_score, previous_score + amount)
+        
+        # Only log history if there is an actual change
+        if new_score != previous_score:
+            self.current_score = new_score
+            self.save()
+            SafetyScoreHistory.objects.create(
+                driver=self.driver,
+                score_change=new_score - previous_score,
+                reason=reason,
+                previous_score=previous_score,
+                new_score=new_score,
+                violation=None,
+            )
 
 
 class SafetyScoreHistory(models.Model):

@@ -21,12 +21,12 @@ class AppealSerializer(serializers.ModelSerializer):
         model = Appeal
         fields = [
             'id', 'violation', 'citizen', 'citizen_name', 'reason',
-            'status', 'admin_remarks', 'reviewed_by', 'reviewed_by_name',
+            'status', 'appeal_count', 'admin_remarks', 'reviewed_by', 'reviewed_by_name',
             'violation_type', 'fine_amount',
             'created_at', 'updated_at', 'reviewed_at',
         ]
         read_only_fields = [
-            'id', 'citizen', 'status', 'admin_remarks',
+            'id', 'citizen', 'status', 'appeal_count', 'admin_remarks',
             'reviewed_by', 'created_at', 'updated_at', 'reviewed_at',
         ]
 
@@ -35,15 +35,25 @@ class SubmitAppealSerializer(serializers.ModelSerializer):
     class Meta:
         model = Appeal
         fields = ['violation', 'reason']
+        extra_kwargs = {
+            'violation': {'validators': []}
+        }
 
     def validate_violation(self, value):
         request = self.context['request']
         if value.driver != request.user:
             raise serializers.ValidationError('You can only appeal your own violations.')
+        if value.action_taken == 'warning':
+            raise serializers.ValidationError('You can only appeal penalties, not warnings.')
         if hasattr(value, 'appeal'):
-            raise serializers.ValidationError('An appeal already exists for this violation.')
-        if value.action_taken != 'fine':
-            raise serializers.ValidationError('You can only appeal fines, not warnings.')
+            appeal = value.appeal
+            if appeal.status in ['pending', 'under_review']:
+                raise serializers.ValidationError('An appeal is already pending review for this violation.')
+            if appeal.status == 'accepted':
+                raise serializers.ValidationError('Appeal for this violation has already been accepted.')
+            if appeal.status == 'final_rejected' or appeal.appeal_count >= 2:
+                raise serializers.ValidationError('Your final appeal has been reviewed and rejected. No further appeals can be submitted.')
+            # If status == 'rejected' and appeal_count == 1, re-appeal is allowed!
         return value
 
 

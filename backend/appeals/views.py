@@ -13,32 +13,55 @@ from .serializers import (
 
 
 class SubmitAppealView(generics.CreateAPIView):
-    """Citizen: submit an appeal for a violation."""
+    """Citizen: submit an appeal for a violation or re-appeal a rejected violation."""
 
     serializer_class = SubmitAppealSerializer
     permission_classes = [IsCitizen]
 
-    def perform_create(self, serializer):
-        serializer.save(citizen=self.request.user)
-
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        appeal = serializer.save(citizen=request.user)
+        violation = serializer.validated_data['violation']
+        reason = serializer.validated_data['reason']
 
-        # Create notification
+        if hasattr(violation, 'appeal'):
+            appeal = violation.appeal
+            appeal.reason = reason
+            appeal.status = Appeal.Status.PENDING
+            appeal.save()
+            created = False
+        else:
+            appeal = serializer.save(citizen=request.user, appeal_count=1)
+            created = True
+
+        # Create notification for citizen
         from notifications.models import Notification
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        title = 'Re-Appeal Submitted' if not created else 'Appeal Submitted'
+        msg_type = 're-appeal' if not created else 'appeal'
         Notification.objects.create(
             user=request.user,
-            title='Appeal Submitted',
-            message=f'Your appeal for violation #{appeal.violation_id} has been submitted and is pending review.',
+            title=title,
+            message=f'Your {msg_type} for violation #{appeal.violation_id} has been submitted and is pending review.',
             notification_type='appeal',
             related_object_id=appeal.id,
         )
 
+        # Notify admins
+        for admin_user in User.objects.filter(role='admin', is_active=True):
+            Notification.objects.create(
+                user=admin_user,
+                title=f'New {title}',
+                message=f'Citizen {request.user.get_full_name()} submitted a {msg_type} for violation #{appeal.violation_id}.',
+                notification_type='appeal',
+                related_object_id=appeal.id,
+            )
+
         return Response(
             AppealSerializer(appeal).data,
-            status=status.HTTP_201_CREATED,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
 
 
@@ -100,27 +123,41 @@ class ReviewAppealView(APIView):
         action = serializer.validated_data['action']
         remarks = serializer.validated_data['admin_remarks']
 
-        appeal.status = action
+        if action == 'accepted':
+            appeal.status = Appeal.Status.ACCEPTED
+            violation = appeal.violation
+            violation.is_paid = True  # Mark as resolved
+            violation.save()
+            restore_safety_score(appeal.citizen, violation)
+        else:
+            # Action is 'rejected'
+            # If this is the second rejection attempt (it was previously reviewed & rejected):
+            if appeal.reviewed_at is not None or appeal.appeal_count > 1:
+                appeal.appeal_count = 2
+                appeal.status = Appeal.Status.FINAL_REJECTED
+            else:
+                appeal.appeal_count = 1
+                appeal.status = Appeal.Status.REJECTED
+
         appeal.admin_remarks = remarks
         appeal.reviewed_by = request.user
         appeal.reviewed_at = timezone.now()
         appeal.save()
 
-        # If accepted: waive the fine and restore safety score
-        if action == 'accepted':
-            violation = appeal.violation
-            violation.is_paid = True  # Mark as resolved
-            violation.save()
-            restore_safety_score(appeal.citizen, violation)
-
         # Notify citizen
         from notifications.models import Notification
-        status_display = 'accepted' if action == 'accepted' else 'rejected'
+        if action == 'accepted':
+            status_text = 'accepted'
+        elif appeal.status == Appeal.Status.FINAL_REJECTED:
+            status_text = 'finally rejected'
+        else:
+            status_text = 'rejected'
+
         Notification.objects.create(
             user=appeal.citizen,
-            title=f'Appeal {status_display.title()}',
+            title=f'Appeal {status_text.title()}',
             message=(
-                f'Your appeal for violation #{appeal.violation_id} has been {status_display}. '
+                f'Your appeal for violation #{appeal.violation_id} has been {status_text}. '
                 f'Admin remarks: {remarks}'
             ),
             notification_type='appeal',
@@ -131,18 +168,19 @@ class ReviewAppealView(APIView):
         from audit.models import AuditLog
         AuditLog.objects.create(
             user=request.user,
-            action=f'appeal_{action}',
+            action=f'appeal_{appeal.status}',
             model_name='Appeal',
             object_id=str(appeal.id),
             details={
                 'violation_id': appeal.violation_id,
                 'citizen': appeal.citizen.get_full_name(),
                 'remarks': remarks,
+                'appeal_count': appeal.appeal_count,
             },
         )
 
         return Response({
-            'message': f'Appeal {status_display}.',
+            'message': f'Appeal {status_text}.',
             'appeal': AppealSerializer(appeal).data,
         })
 
@@ -163,6 +201,9 @@ class SubmitComplaintView(generics.CreateAPIView):
 
         # Create notification for the citizen
         from notifications.models import Notification
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
         Notification.objects.create(
             user=request.user,
             title='Complaint Filed',
@@ -170,6 +211,16 @@ class SubmitComplaintView(generics.CreateAPIView):
             notification_type='appeal',
             related_object_id=complaint.id,
         )
+
+        # Notify admins
+        for admin_user in User.objects.filter(role='admin', is_active=True):
+            Notification.objects.create(
+                user=admin_user,
+                title='New Officer Complaint Submitted',
+                message=f'Citizen {request.user.get_full_name()} filed a complaint against Officer {complaint.officer.get_full_name()}.',
+                notification_type='appeal',
+                related_object_id=complaint.id,
+            )
 
         return Response(
             ComplaintSerializer(complaint).data,

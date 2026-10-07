@@ -36,13 +36,16 @@ api.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${res.data.access}`;
           return api(originalRequest);
         } catch {
-          localStorage.clear();
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
           window.location.href = '/login';
         }
       } else {
-        localStorage.clear();
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         window.location.href = '/login';
       }
+
     }
     return Promise.reject(error);
   }
@@ -52,10 +55,35 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (data) => api.post('/accounts/login/', data),
   register: (data) => api.post('/accounts/register/', data),
+  verifyIdentity: (data) => api.post('/accounts/verify-identity/', data),
   getProfile: () => api.get('/accounts/profile/'),
-  updateProfile: (data) => api.patch('/accounts/profile/', data),
+
+  updateProfile: (data) => {
+    if (data instanceof FormData) {
+      return api.patch('/accounts/profile/', data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    }
+    return api.patch('/accounts/profile/', data);
+  },
   changePassword: (data) => api.post('/accounts/change-password/', data),
 };
+
+// ─── Corrections ───
+export const correctionsAPI = {
+  myCorrections: () => api.get('/accounts/corrections/'),
+  allCorrections: (params) => api.get('/accounts/corrections/', { params }),
+  requestCorrection: (data) => {
+    if (data instanceof FormData) {
+      return api.post('/accounts/corrections/', data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    }
+    return api.post('/accounts/corrections/', data);
+  },
+  reviewCorrection: (id, data) => api.post(`/accounts/corrections/${id}/review/`, data),
+};
+
 
 // ─── Users (Admin) ───
 export const usersAPI = {
@@ -80,16 +108,12 @@ export const vehiclesAPI = {
   deleteVehicle: (id) => api.delete(`/vehicles/my/${id}/`),
   search: (params) => api.get('/vehicles/search/', { params }),
   byOwner: (ownerId) => api.get(`/vehicles/owner/${ownerId}/`),
-  initiateTransfer: (data) => api.post('/vehicles/transfer/', data),
   
   // Admin Endpoints
   pendingVerifications: () => api.get('/vehicles/admin/verifications/'),
   approveVerification: (id) => api.post(`/vehicles/admin/verifications/${id}/approve/`),
   rejectVerification: (id) => api.post(`/vehicles/admin/verifications/${id}/reject/`),
   requestInfoVerification: (id) => api.post(`/vehicles/admin/verifications/${id}/request-info/`),
-  
-  pendingTransfers: () => api.get('/vehicles/admin/transfers/'),
-  approveTransfer: (id) => api.post(`/vehicles/admin/transfers/${id}/approve/`),
 };
 
 // ─── Violations ───

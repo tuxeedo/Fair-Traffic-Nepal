@@ -206,12 +206,14 @@ class AppealStatsView(APIView):
             .values_list('status', 'count')
         )
 
+        rejected_count = by_status.get('rejected', 0) + by_status.get('final_rejected', 0)
         return Response({
             'total': total,
             'pending': by_status.get('pending', 0),
             'under_review': by_status.get('under_review', 0),
             'accepted': by_status.get('accepted', 0),
-            'rejected': by_status.get('rejected', 0),
+            'rejected': rejected_count,
+            'final_rejected': by_status.get('final_rejected', 0),
             'acceptance_rate': (
                 round(by_status.get('accepted', 0) / total * 100, 1) if total > 0 else 0
             ),

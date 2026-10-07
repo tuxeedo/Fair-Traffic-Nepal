@@ -13,6 +13,7 @@ class Appeal(models.Model):
         UNDER_REVIEW = 'under_review', 'Under Review'
         ACCEPTED = 'accepted', 'Accepted'
         REJECTED = 'rejected', 'Rejected'
+        FINAL_REJECTED = 'final_rejected', 'Final Rejected'
 
     violation = models.OneToOneField(
         'violations.Violation',
@@ -26,9 +27,13 @@ class Appeal(models.Model):
     )
     reason = models.TextField(help_text='Reason for the appeal')
     status = models.CharField(
-        max_length=15,
+        max_length=20,
         choices=Status.choices,
         default=Status.PENDING,
+    )
+    appeal_count = models.PositiveIntegerField(
+        default=1,
+        help_text='Number of times appeal has been submitted/reviewed',
     )
     admin_remarks = models.TextField(blank=True)
     reviewed_by = models.ForeignKey(

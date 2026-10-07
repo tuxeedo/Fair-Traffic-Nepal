@@ -16,7 +16,30 @@ class SubmitReportView(generics.CreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def perform_create(self, serializer):
-        serializer.save(reporter=self.request.user)
+        report = serializer.save(reporter=self.request.user)
+
+        from notifications.models import Notification
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        # Notify reporter
+        Notification.objects.create(
+            user=self.request.user,
+            title='Report Submitted',
+            message=f'Your report "{report.title}" has been submitted and is under review.',
+            notification_type='report',
+            related_object_id=report.id,
+        )
+
+        # Notify admins and officers
+        for recipient in User.objects.filter(role__in=['admin', 'officer'], is_active=True):
+            Notification.objects.create(
+                user=recipient,
+                title='New Community Traffic Report',
+                message=f'Citizen {self.request.user.get_full_name()} submitted report "{report.title}".',
+                notification_type='report',
+                related_object_id=report.id,
+            )
 
 
 class MyReportsView(generics.ListAPIView):
