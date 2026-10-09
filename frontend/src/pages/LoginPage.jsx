@@ -159,11 +159,27 @@ export default function LoginPage() {
         <div className="form-container sign-up" style={{ overflowY: 'auto' }}>
           {step === 1 ? (
             <form onSubmit={handleVerifyIdentity}>
-              <h1>Verify Identity</h1>
-              <span style={{ marginBottom: '15px' }}>Enter government ID to continue</span>
+              <h1 style={{ color: '#0f172a', fontWeight: 700, fontSize: '1.75rem', marginBottom: '4px' }}>Verify Identity</h1>
+              <span style={{ marginBottom: '16px', color: '#64748b', fontSize: '13px', fontWeight: 500, display: 'block' }}>
+                Enter government ID to continue
+              </span>
 
-              <div style={{ display: 'flex', gap: '15px', margin: '10px 0', width: '100%', justifyContent: 'center' }}>
-                <label style={{ fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <div style={{ display: 'flex', gap: '16px', margin: '14px 0', width: '100%', justifyContent: 'center' }}>
+                <label style={{
+                  fontSize: '13.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: identityType === 'citizenship' ? '#4f46e5' : '#334155',
+                  background: identityType === 'citizenship' ? '#eef2ff' : '#f8fafc',
+                  padding: '9px 18px',
+                  borderRadius: '10px',
+                  border: identityType === 'citizenship' ? '1.5px solid #6366f1' : '1px solid #cbd5e1',
+                  transition: 'all 0.2s ease',
+                  userSelect: 'none'
+                }}>
                   <input
                     type="radio"
                     name="idType"
@@ -172,11 +188,25 @@ export default function LoginPage() {
                       setIdentityType('citizenship');
                       setIdentityNumber('');
                     }}
-                    style={{ width: 'auto', margin: 0 }}
+                    style={{ accentColor: '#4f46e5', width: '16px', height: '16px', margin: 0, cursor: 'pointer' }}
                   />
                   Citizenship
                 </label>
-                <label style={{ fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <label style={{
+                  fontSize: '13.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: identityType === 'nid' ? '#4f46e5' : '#334155',
+                  background: identityType === 'nid' ? '#eef2ff' : '#f8fafc',
+                  padding: '9px 18px',
+                  borderRadius: '10px',
+                  border: identityType === 'nid' ? '1.5px solid #6366f1' : '1px solid #cbd5e1',
+                  transition: 'all 0.2s ease',
+                  userSelect: 'none'
+                }}>
                   <input
                     type="radio"
                     name="idType"
@@ -185,7 +215,7 @@ export default function LoginPage() {
                       setIdentityType('nid');
                       setIdentityNumber('');
                     }}
-                    style={{ width: 'auto', margin: 0 }}
+                    style={{ accentColor: '#4f46e5', width: '16px', height: '16px', margin: 0, cursor: 'pointer' }}
                   />
                   National ID
                 </label>
@@ -204,8 +234,10 @@ export default function LoginPage() {
                 required
               />
 
-              <div style={{ width: '100%', textAlign: 'left', marginTop: '5px' }}>
-                <label style={{ fontSize: '12px', color: '#555', marginLeft: '5px' }}>Date of Birth</label>
+              <div style={{ width: '100%', textAlign: 'left', marginTop: '8px' }}>
+                <label style={{ fontSize: '12.5px', fontWeight: 600, color: '#334155', marginLeft: '2px', display: 'block', marginBottom: '4px' }}>
+                  Date of Birth
+                </label>
                 <input
                   type="date"
                   value={dateOfBirth}
