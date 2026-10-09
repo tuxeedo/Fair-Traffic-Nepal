@@ -40,7 +40,7 @@ export default function CitizenDashboard() {
         setSafetyScore(scoreRes.data);
         setViolations(violRes.data.results || []);
         setNotifications(notifRes.data.results || []);
-        setVehicles(vehRes.data || []);
+        setVehicles(vehRes.data?.results || (Array.isArray(vehRes.data) ? vehRes.data : []));
       } catch {
         /* ignore */
       }
@@ -61,7 +61,7 @@ export default function CitizenDashboard() {
   const rank = getRankBadge(score);
   const RankIcon = rank.icon;
 
-  const unpaidFines = violations.filter((v) => v.action_taken === 'fine' && !v.is_paid);
+  const unpaidFines = violations.filter((v) => v.action_taken === 'fine' && !v.is_paid && v.appeal_status !== 'accepted');
   const totalFinesSum = unpaidFines.reduce((sum, v) => sum + parseFloat(v.fine_amount || 0), 0);
 
   if (loading) {
@@ -380,17 +380,25 @@ export default function CitizenDashboard() {
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className={`badge badge-${v.action_taken === 'warning' ? 'warning' : 'fine'}`}>
-                      {v.action_taken}
-                    </span>
-                    {v.action_taken === 'fine' && !v.is_paid && (
-                      <button
-                        className="btn btn-success btn-sm"
-                        style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                        onClick={() => navigate(`/citizen/pay/${v.id}`)}
-                      >
-                        Pay
-                      </button>
+                    {v.appeal_status === 'accepted' ? (
+                      <span className="badge badge-success" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                        Appeal Approved
+                      </span>
+                    ) : (
+                      <>
+                        <span className={`badge badge-${v.action_taken === 'warning' ? 'warning' : 'fine'}`}>
+                          {v.action_taken}
+                        </span>
+                        {v.action_taken === 'fine' && !v.is_paid && (
+                          <button
+                            className="btn btn-success btn-sm"
+                            style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                            onClick={() => navigate(`/citizen/pay/${v.id}`)}
+                          >
+                            Pay
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

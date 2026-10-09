@@ -28,10 +28,29 @@ export default function ViolationHistory() {
                   <td><span className={`badge badge-${v.violation_category === 'dangerous' ? 'danger' : v.violation_category === 'major' ? 'warning' : 'info'}`}>{v.violation_category}</span></td>
                   <td><span className={`badge badge-${v.action_taken === 'warning' ? 'warning' : 'fine'}`}>{v.action_taken}</span></td>
                   <td>{v.action_taken === 'fine' ? `NPR ${v.fine_amount}` : '-'}</td>
-                  <td>{v.action_taken === 'fine' ? (v.is_paid ? <span className="badge badge-success">Paid</span> : <span className="badge badge-danger">Unpaid</span>) : <span className="badge badge-info">N/A</span>}</td>
+                  <td>
+                    {v.appeal_status === 'accepted' ? (
+                      <span className="badge badge-info" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                        Appeal Approved (Dismissed)
+                      </span>
+                    ) : v.action_taken === 'fine' ? (
+                      v.is_paid ? <span className="badge badge-success">Paid</span> : <span className="badge badge-danger">Unpaid</span>
+                    ) : (
+                      <span className="badge badge-info">N/A</span>
+                    )}
+                  </td>
                   <td style={{ display: 'flex', gap: 8 }}>
-                    {v.action_taken === 'fine' && !v.is_paid && <button className="btn btn-success btn-sm" onClick={() => navigate(`/citizen/pay/${v.id}`)}>Pay</button>}
-                    {v.action_taken === 'fine' && <button className="btn btn-ghost btn-sm" onClick={() => navigate('/citizen/appeals', { state: { violationId: v.id } })}>Appeal</button>}
+                    {v.action_taken === 'fine' && !v.is_paid && v.appeal_status !== 'accepted' && (
+                      <button className="btn btn-success btn-sm" onClick={() => navigate(`/citizen/pay/${v.id}`)}>Pay</button>
+                    )}
+                    {v.action_taken === 'fine' && v.appeal_status !== 'accepted' && (
+                      <button className="btn btn-ghost btn-sm" onClick={() => navigate('/citizen/appeals', { state: { violationId: v.id } })}>
+                        {v.appeal_status ? 'View Appeal' : 'Appeal'}
+                      </button>
+                    )}
+                    {v.appeal_status === 'accepted' && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Resolved</span>
+                    )}
                   </td>
                 </tr>
               ))}

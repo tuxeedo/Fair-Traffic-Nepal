@@ -57,6 +57,7 @@ class ViolationSerializer(serializers.ModelSerializer):
         source='vehicle.registration_number', read_only=True, default=None
     )
     warning = WarningSerializer(read_only=True)
+    appeal_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Violation
@@ -65,12 +66,17 @@ class ViolationSerializer(serializers.ModelSerializer):
             'officer', 'officer_name', 'violation_type', 'violation_type_name',
             'violation_category', 'action_taken', 'fine_amount', 'is_paid',
             'paid_at', 'gps_lat', 'gps_lng', 'location_description',
-            'officer_remarks', 'rule_applied', 'warning', 'created_at',
+            'officer_remarks', 'rule_applied', 'warning', 'appeal_status', 'created_at',
         ]
         read_only_fields = [
             'id', 'officer', 'action_taken', 'fine_amount',
-            'is_paid', 'paid_at', 'rule_applied', 'created_at',
+            'is_paid', 'paid_at', 'rule_applied', 'appeal_status', 'created_at',
         ]
+
+    def get_appeal_status(self, obj):
+        if hasattr(obj, 'appeal') and obj.appeal:
+            return obj.appeal.status
+        return None
 
 
 class RecordViolationSerializer(serializers.Serializer):
