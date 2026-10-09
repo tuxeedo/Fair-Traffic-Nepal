@@ -2,40 +2,82 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Inter', 'Montserrat', system-ui, sans-serif;
+    font-family: 'Inter', 'Montserrat', system-ui, -apple-system, sans-serif;
 }
 
 .auth-wrapper {
     background-color: #0f172a;
-    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    height: 100vh;
+    min-height: 100vh;
     padding: 20px;
 }
 
 .auth-wrapper .auth-container {
     background-color: #ffffff;
     border-radius: 24px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
     position: relative;
     overflow: hidden;
-    width: 768px;
+    width: 800px;
     max-width: 100%;
-    min-height: 520px;
+    min-height: 540px;
 }
 
-/* Base text color overrides inside forms to prevent white-on-white text */
+/* ─── Form Containers ─── */
+.auth-wrapper .form-container {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 50%;
+    transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.4s ease-in-out;
+    overflow-y: auto;
+}
+
+/* Sign In Form (Left 50%) */
+.auth-wrapper .sign-in {
+    left: 0;
+    z-index: 2;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+}
+
+.auth-wrapper .auth-container.active .sign-in {
+    transform: translateX(-20%);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Sign Up Form (Right 50%) */
+.auth-wrapper .sign-up {
+    left: 50%;
+    z-index: 1;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(20%);
+}
+
+.auth-wrapper .auth-container.active .sign-up {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 2;
+}
+
+/* Base form styling */
 .auth-wrapper .auth-container form {
     background-color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    padding: 30px 40px;
-    height: 100%;
+    padding: 30px 36px;
+    min-height: 100%;
     text-align: center;
     color: #1e293b;
 }
@@ -45,13 +87,13 @@
     font-weight: 700;
     color: #0f172a !important;
     -webkit-text-fill-color: #0f172a !important;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
 .auth-wrapper .auth-container form p {
     font-size: 13.5px;
     line-height: 20px;
-    margin: 12px 0;
+    margin: 10px 0;
     color: #475569 !important;
     -webkit-text-fill-color: #475569 !important;
 }
@@ -86,13 +128,13 @@
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
     font-size: 13px;
-    padding: 12px 45px;
+    padding: 12px 40px;
     border: none;
     border-radius: 10px;
     font-weight: 600;
     letter-spacing: 0.5px;
     text-transform: uppercase;
-    margin-top: 15px;
+    margin-top: 14px;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
     transition: all 0.2s ease;
@@ -116,7 +158,7 @@
 .auth-wrapper .auth-container input {
     background-color: #f8fafc;
     border: 1px solid #cbd5e1;
-    margin: 8px 0;
+    margin: 7px 0;
     padding: 11px 15px;
     font-size: 13.5px;
     border-radius: 10px;
@@ -139,64 +181,14 @@
     -webkit-text-fill-color: #94a3b8 !important;
 }
 
-/* ─── Sliding Panels Mechanics ─── */
-.auth-wrapper .form-container {
-    position: absolute;
-    top: 0;
-    height: 100%;
-    transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.5s ease-in-out;
+/* Custom scrollbars */
+.auth-wrapper .form-container::-webkit-scrollbar {
+    width: 5px;
 }
-
-.auth-wrapper .sign-in {
-    left: 0;
-    width: 50%;
-    z-index: 2;
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.auth-wrapper .auth-container.active .sign-in {
-    transform: translateX(100%);
-    opacity: 0;
-    z-index: 1;
-    pointer-events: none;
-}
-
-.auth-wrapper .sign-up {
-    left: 0;
-    width: 50%;
-    opacity: 0;
-    z-index: 1;
-    pointer-events: none;
-}
-
-.auth-wrapper .auth-container.active .sign-up {
-    transform: translateX(100%);
-    opacity: 1;
-    z-index: 5;
-    pointer-events: auto;
-    animation: auth-show 0.6s cubic-bezier(0.65, 0, 0.35, 1);
-}
-
-@keyframes auth-show {
-    0%, 49.99% {
-        opacity: 0;
-        z-index: 1;
-    }
-    50%, 100% {
-        opacity: 1;
-        z-index: 5;
-    }
-}
-
-/* Custom scrollbar for sign up step forms if long */
-.auth-wrapper .sign-up::-webkit-scrollbar {
-    width: 6px;
-}
-.auth-wrapper .sign-up::-webkit-scrollbar-track {
+.auth-wrapper .form-container::-webkit-scrollbar-track {
     background: transparent;
 }
-.auth-wrapper .sign-up::-webkit-scrollbar-thumb {
+.auth-wrapper .form-container::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 4px;
 }
@@ -209,14 +201,14 @@
     width: 50%;
     height: 100%;
     overflow: hidden;
-    transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1), border-radius 0.6s cubic-bezier(0.65, 0, 0.35, 1);
-    border-radius: 120px 0 0 80px;
+    transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+    border-radius: 0 24px 24px 0;
     z-index: 100;
 }
 
 .auth-wrapper .auth-container.active .toggle-container {
     transform: translateX(-100%);
-    border-radius: 0 120px 80px 0;
+    border-radius: 24px 0 0 24px;
 }
 
 .auth-wrapper .toggle {
@@ -244,7 +236,7 @@
     padding: 0 40px;
     text-align: center;
     top: 0;
-    transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+    transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.4s ease;
 }
 
 .auth-wrapper .toggle-panel h1 {
@@ -269,10 +261,12 @@
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
     box-shadow: none !important;
-    padding: 10px 40px;
+    padding: 11px 40px;
     border-radius: 10px;
     font-size: 13px;
     font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
 }
 
 .auth-wrapper .toggle-panel button.hidden:hover {
@@ -281,18 +275,23 @@
 }
 
 .auth-wrapper .toggle-left {
-    transform: translateX(-200%);
+    left: 0;
+    transform: translateX(-20%);
+    opacity: 0;
 }
 
 .auth-wrapper .auth-container.active .toggle-left {
     transform: translateX(0);
+    opacity: 1;
 }
 
 .auth-wrapper .toggle-right {
     right: 0;
     transform: translateX(0);
+    opacity: 1;
 }
 
 .auth-wrapper .auth-container.active .toggle-right {
-    transform: translateX(200%);
+    transform: translateX(20%);
+    opacity: 0;
 }
