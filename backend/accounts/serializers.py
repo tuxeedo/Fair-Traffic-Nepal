@@ -1,9 +1,40 @@
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.password_validation import validate_password
 from .models import OfficerProfile, CorrectionRequest, GovernmentCitizenRecord
 
 User = get_user_model()
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Serializer for obtain pair token that supports login using either username OR email address.
+    """
+    def validate(self, attrs):
+        username_or_email = attrs.get(self.username_field) or attrs.get('email')
+        password = attrs.get('password')
+
+        if username_or_email and password:
+            user = authenticate(
+                request=self.context.get('request'),
+                username=username_or_email,
+                password=password
+            )
+
+            if not user:
+                raise serializers.ValidationError(
+                    {'detail': 'No active account found with the given credentials'},
+                    code='authorization'
+                )
+        else:
+            raise serializers.ValidationError(
+                {'detail': 'Must include "username" or "email" and "password".'},
+                code='authorization'
+            )
+
+        data = super().validate({'username': user.username, 'password': password})
+        return data
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
