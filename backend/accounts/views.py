@@ -218,8 +218,6 @@ class CorrectionRequestListCreateView(generics.ListCreateAPIView):
         correction = serializer.save(user=self.request.user)
 
         from notifications.models import Notification
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
 
         # Notify citizen
         Notification.objects.create(

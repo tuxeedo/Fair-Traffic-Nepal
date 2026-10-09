@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 export default function OfficerStats() {
   return (
     <div className="animate-fade-in">

@@ -3,9 +3,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 
+from django.contrib.auth import get_user_model
 from accounts.permissions import IsAdmin, IsOfficerOrAdmin, IsCitizen
 from .models import CommunityReport
 from .serializers import CommunityReportSerializer, ReviewReportSerializer
+
+User = get_user_model()
 
 
 class SubmitReportView(generics.CreateAPIView):
@@ -19,8 +22,6 @@ class SubmitReportView(generics.CreateAPIView):
         report = serializer.save(reporter=self.request.user)
 
         from notifications.models import Notification
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
 
         # Notify reporter
         Notification.objects.create(

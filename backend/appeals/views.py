@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.utils import timezone
 
+from django.contrib.auth import get_user_model
 from accounts.permissions import IsAdmin, IsCitizen
 from violations.rule_engine import restore_safety_score
 from .models import Appeal, Complaint
@@ -10,6 +11,8 @@ from .serializers import (
     AppealSerializer, SubmitAppealSerializer, ReviewAppealSerializer,
     ComplaintSerializer, SubmitComplaintSerializer, ReviewComplaintSerializer
 )
+
+User = get_user_model()
 
 
 class SubmitAppealView(generics.CreateAPIView):
@@ -36,8 +39,6 @@ class SubmitAppealView(generics.CreateAPIView):
 
         # Create notification for citizen
         from notifications.models import Notification
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
 
         title = 'Re-Appeal Submitted' if not created else 'Appeal Submitted'
         msg_type = 're-appeal' if not created else 'appeal'
@@ -201,8 +202,6 @@ class SubmitComplaintView(generics.CreateAPIView):
 
         # Create notification for the citizen
         from notifications.models import Notification
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
 
         Notification.objects.create(
             user=request.user,

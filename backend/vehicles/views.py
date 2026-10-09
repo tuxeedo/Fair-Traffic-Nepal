@@ -24,8 +24,6 @@ class MyVehicleListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         vehicle = serializer.save(owner=self.request.user)
         from notifications.models import Notification
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
 
         # Notify owner
         Notification.objects.create(
