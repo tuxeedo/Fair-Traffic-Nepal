@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import DrivingQuiz from '../../components/DrivingQuiz';
 
 // ─── SVG Vector Signboard Renderer ───
 function SignGraphic({ id, size = 80 }) {
@@ -428,35 +429,10 @@ const TRAFFIC_SIGNS = [
   },
 ];
 
-const QUIZ_QUESTIONS = [
-  {
-    question: 'What does a solid Red traffic light indicate?',
-    options: ['Slow down and yield', 'Complete Stop behind stop line', 'Drive fast to clear', 'Overtake immediately'],
-    correct: 1,
-    explanation: 'A solid red light requires a complete stop before the stop line or zebra crossing.',
-  },
-  {
-    question: 'Who has the right-of-way at a Traffic Roundabout (गोलचक्कर)?',
-    options: ['Vehicles entering the roundabout', 'Vehicles already inside the roundabout', 'Heavy trucks only', 'Pedestrians on sidewalk'],
-    correct: 1,
-    explanation: 'Vehicles already circulating inside the roundabout always have priority right-of-way.',
-  },
-  {
-    question: 'What is the fine and penalty for jumping a Red Traffic Light in Nepal?',
-    options: ['No penalty', 'NPR 500 only', 'NPR 1,500-2,500 fine + 20 Safety Score deduction', 'Free warning'],
-    correct: 2,
-    explanation: 'Running a red light incurs severe fines (NPR 1,500-2,500) and deducts 20 points from your Driver Safety Score.',
-  },
-];
-
 export default function TrafficSignsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('guide'); // 'guide' | 'quiz'
-
-  // Quiz state
-  const [quizAnswers, setQuizAnswers] = useState({});
-  const [quizSubmitted, setQuizSubmitted] = useState(false);
 
   const filteredSigns = TRAFFIC_SIGNS.filter((sign) => {
     const matchesCategory = selectedCategory === 'all' || sign.category === selectedCategory;
@@ -466,19 +442,6 @@ export default function TrafficSignsPage() {
       sign.nepaliDesc.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
-
-  const handleOptionSelect = (questionIdx, optionIdx) => {
-    if (quizSubmitted) return;
-    setQuizAnswers({ ...quizAnswers, [questionIdx]: optionIdx });
-  };
-
-  const calculateQuizScore = () => {
-    let score = 0;
-    QUIZ_QUESTIONS.forEach((q, idx) => {
-      if (quizAnswers[idx] === q.correct) score++;
-    });
-    return score;
-  };
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -634,111 +597,7 @@ export default function TrafficSignsPage() {
       )}
 
       {/* Quiz Tab */}
-      {activeTab === 'quiz' && (
-        <div className="glass-card" style={{ padding: 32, maxWidth: 720, margin: '0 auto', width: '100%' }}>
-          <div style={{ marginBottom: 24, textAlign: 'center' }}>
-            <h2 style={{ fontSize: '1.3rem', fontWeight: 700, margin: 0 }}>
-              🧠 Traffic Rules & Signs Self-Test
-            </h2>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: 4 }}>
-              Test your driver knowledge of Nepal road rules and sign meanings.
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            {QUIZ_QUESTIONS.map((q, qIdx) => (
-              <div key={qIdx} style={{
-                padding: 20,
-                borderRadius: 12,
-                background: 'var(--bg-surface-raised)',
-                border: '1px solid var(--border-subtle)',
-              }}>
-                <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: 12 }}>
-                  {qIdx + 1}. {q.question}
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {q.options.map((opt, optIdx) => {
-                    const isSelected = quizAnswers[qIdx] === optIdx;
-                    const isCorrect = optIdx === q.correct;
-                    let optionBg = 'var(--bg-surface)';
-                    let optionBorder = 'var(--border-subtle)';
-
-                    if (quizSubmitted) {
-                      if (isCorrect) {
-                        optionBg = 'rgba(16, 185, 129, 0.15)';
-                        optionBorder = 'var(--color-success)';
-                      } else if (isSelected && !isCorrect) {
-                        optionBg = 'rgba(239, 68, 68, 0.15)';
-                        optionBorder = 'var(--color-danger)';
-                      }
-                    } else if (isSelected) {
-                      optionBg = 'rgba(79, 70, 229, 0.15)';
-                      optionBorder = 'var(--color-primary)';
-                    }
-
-                    return (
-                      <button
-                        key={optIdx}
-                        type="button"
-                        onClick={() => handleOptionSelect(qIdx, optIdx)}
-                        style={{
-                          padding: '10px 14px',
-                          borderRadius: 8,
-                          background: optionBg,
-                          border: `1px solid ${optionBorder}`,
-                          color: 'var(--text-primary)',
-                          textAlign: 'left',
-                          cursor: quizSubmitted ? 'default' : 'pointer',
-                          fontWeight: isSelected ? 600 : 400,
-                          fontSize: '0.875rem',
-                          transition: 'all 0.15s',
-                        }}
-                      >
-                        {String.fromCharCode(65 + optIdx)}. {opt}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {quizSubmitted && (
-                  <div style={{ marginTop: 12, fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                    💡 {q.explanation}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Quiz Action */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-              {!quizSubmitted ? (
-                <button
-                  className="btn btn-primary"
-                  onClick={() => setQuizSubmitted(true)}
-                  disabled={Object.keys(quizAnswers).length < QUIZ_QUESTIONS.length}
-                >
-                  Submit & Check Score
-                </button>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-success)' }}>
-                    Your Score: {calculateQuizScore()} / {QUIZ_QUESTIONS.length} Correct! 🎉
-                  </div>
-                  <button
-                    className="btn btn-ghost"
-                    onClick={() => {
-                      setQuizAnswers({});
-                      setQuizSubmitted(false);
-                    }}
-                  >
-                    Retake Quiz
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {activeTab === 'quiz' && <DrivingQuiz />}
     </div>
   );
 }

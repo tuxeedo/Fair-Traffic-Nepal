@@ -1,3 +1,4 @@
+import EmptyState from '../../components/EmptyState';
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { appealsAPI, violationsAPI, evidenceAPI } from '../../services/api';
@@ -178,10 +179,7 @@ export default function AppealsPage() {
       {loading ? (
         <div className="skeleton" style={{ height: 200 }} />
       ) : appeals.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">📝</div>
-          <div className="empty-state-text">No appeals submitted</div>
-        </div>
+        <EmptyState kind="appeal" label="Appeals" title="Your appeals will appear here" description="Submit an appeal for an eligible violation and track the review outcome in one place." />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {appeals.map(a => {

@@ -259,17 +259,17 @@ export default function TrafficMap() {
   });
 
   return (
-    <div className="animate-fade-in" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, height: 'calc(100vh - 120px)' }}>
+    <div className="traffic-map-layout animate-fade-in" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, height: 'calc(100vh - 120px)' }}>
       {/* Sidebar Panel */}
       <div className="glass-card" style={{ padding: 20, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: 8 }}>Interactive Map</h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: 8 }}>Traffic Map</h2>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 16 }}>
           {isOfficerOrAdmin ? 'Click map to publish official traffic alerts.' : 'Click map to report hazards, traffic status or suggestion.'}
         </p>
 
         {/* Legend */}
-        <div style={{ marginBottom: 20 }}>
-          <h4 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Map Legend</h4>
+        <div className="map-symbol-guide" style={{ marginBottom: 20 }}>
+          <h4 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 10 }}>Map symbols</h4>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: '0.75rem' }}>
             {Object.entries(LAYER_ICONS).map(([type, icon]) => (
               <div key={type} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

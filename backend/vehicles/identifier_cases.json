@@ -1,0 +1,30 @@
+{
+  "registration": [
+    ["BA 2 PA 1234", "BA 2 PA 1234"],
+    ["ba2pa0123", "BA 2 PA 123"],
+    ["बा २ प १२३४", "BA 2 PA 1234"],
+    ["ज १ ज २", "JAN 1 JA 2"],
+    ["मे १२३ प ९९९९", "ME 123 PA 9999"],
+    ["BAGMATI 01-001 PA 1234", "BAGMATI 01-001 PA 1234"],
+    ["प्रदेश ३–०१–००१ प १२३४", "BAGMATI 01-001 PA 1234"],
+    ["बागमती ०१-००१ प ००१२", "BAGMATI 01-001 PA 12"],
+    ["Province 3 01 001 PA 1234", "BAGMATI 01-001 PA 1234"],
+    ["BAGMATI AA 1234", "BAGMATI AA 1234"],
+    ["Sudurpaschim ABC १२३४", "SUDURPASHCHIM ABC 1234"],
+    ["hello", null], ["123456", null], ["BA 0 PA 1234", null],
+    ["BA 2 ZZ 1234", null], ["ZZ 2 PA 1234", null],
+    ["BA 2 PA 0000", null], ["BA 2 PA 12345", null],
+    ["BA 2 PA 1@23", null], ["BAGMATI 00-001 PA 1234", null],
+    ["BAGMATI 01-000 PA 1234", null], ["Province 8 01 001 PA 1234", null],
+    ["BAGMATI AA 0000", null], ["BAGMATI AAAA 1234", null]
+  ],
+  "bluebook": [
+    ["१२३४५६", "123456"], [" bb-१२३४५ / ८१ ", "BB-12345/81"],
+    ["बा-१२३/८२", "बा-123/82"], ["012345", "012345"],
+    ["1", "1"], ["  BB  1234  ", "BB 1234"],
+    ["", null], ["random text", null], ["BB@123", null],
+    ["123<script>", null], ["BB--123", null], ["123/", null],
+    ["12🙂34", null], ["१२३४!", null],
+    ["123456789012345678901234567890123456789012345678901", null]
+  ]
+}

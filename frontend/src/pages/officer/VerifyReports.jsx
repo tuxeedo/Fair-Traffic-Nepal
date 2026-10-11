@@ -1,3 +1,4 @@
+import EmptyState from '../../components/EmptyState';
 import { useState, useEffect } from 'react';
 import { reportsAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -19,7 +20,7 @@ export default function VerifyReports() {
     <div className="animate-fade-in">
       <div className="page-header"><h1 className="page-title">Verify Reports</h1><p className="page-subtitle">Review community-submitted reports</p></div>
       {loading ? <div className="skeleton" style={{ height: 200 }} /> : reports.length === 0 ? (
-        <div className="empty-state"><div className="empty-state-icon">✅</div><div className="empty-state-text">No pending reports</div></div>
+        <EmptyState kind="report" label="Report verification" title="No pending reports to review" description="Citizen reports awaiting verification will appear here with their supporting details." />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {reports.map(r => (

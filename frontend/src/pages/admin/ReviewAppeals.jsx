@@ -1,3 +1,4 @@
+import EmptyState from '../../components/EmptyState';
 import { useState, useEffect } from 'react';
 import { appealsAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -42,10 +43,7 @@ export default function ReviewAppeals() {
       {loading ? (
         <div className="skeleton" style={{ height: 300 }} />
       ) : appeals.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">📝</div>
-          <div className="empty-state-text">No appeals found</div>
-        </div>
+        <EmptyState kind="appeal" label="Appeal review" title="No appeals in this view" description="Appeals matching the current view will appear here for review." />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {appeals.map(a => {

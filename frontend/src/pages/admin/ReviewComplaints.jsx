@@ -1,3 +1,4 @@
+import EmptyState from '../../components/EmptyState';
 import { useState, useEffect } from 'react';
 import { complaintsAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -42,10 +43,7 @@ export default function ReviewComplaints() {
       {loading ? (
         <div className="skeleton" style={{ height: 300 }} />
       ) : complaints.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">🛡️</div>
-          <div className="empty-state-text">No complaints filed</div>
-        </div>
+        <EmptyState kind="shield" label="Complaint review" title="No complaints in this view" description="Matching citizen complaints will appear here with their details and review actions." />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {complaints.map(c => (

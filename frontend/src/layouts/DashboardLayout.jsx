@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { notificationsAPI } from '../services/api';
 import UserProfileModal from '../components/UserProfileModal';
@@ -80,6 +80,12 @@ const NAV_ITEMS = {
 export default function DashboardLayout() {
   const { user, logout, isProfileComplete } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 900px)').matches);
+  const [navSearch, setNavSearch] = useState('');
+  const menuToggleRef = useRef(null);
+  const sidebarRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -93,6 +99,57 @@ export default function DashboardLayout() {
   const roleMenuRef = useRef(null);
 
   const navItems = NAV_ITEMS[user?.role] || [];
+  const currentPage = navItems.find((item) => item.path === pathname)?.label || 'Workspace';
+  const visibleNavItems = navItems.filter((item) => item.label.toLowerCase().includes(navSearch.toLowerCase().trim()));
+
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 900px)');
+    const onResize = () => { setIsMobile(query.matches); setMobileOpen(false); };
+    query.addEventListener('change', onResize);
+    return () => query.removeEventListener('change', onResize);
+  }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+    setPopoverOpen(false);
+    setRoleSwitcherOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const sidebar = sidebarRef.current;
+    const focusable = () => [...sidebar.querySelectorAll('a[href], button, input')].filter((element) => element.getClientRects().length > 0);
+    focusable()[0]?.focus();
+    const trapFocus = (event) => {
+      if (event.key !== 'Tab') return;
+      const elements = focusable();
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    sidebar.addEventListener('keydown', trapFocus);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      sidebar.removeEventListener('keydown', trapFocus);
+      menuToggleRef.current?.focus();
+    };
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    const closeMenus = (event) => {
+      if (event.key === 'Escape') {
+        setMobileOpen(false);
+        setPopoverOpen(false);
+        setRoleSwitcherOpen(false);
+        menuToggleRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', closeMenus);
+    return () => document.removeEventListener('keydown', closeMenus);
+  }, []);
 
   // Theme Sync effect
   useEffect(() => {
@@ -116,6 +173,7 @@ export default function DashboardLayout() {
 
   useEffect(() => {
     const fetchUnread = async () => {
+      if (document.hidden) return;
       try {
         const res = await notificationsAPI.unreadCount();
         setUnreadCount(res.data.unread_count);
@@ -139,9 +197,14 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)' }}>
+    <div className={`dashboard-shell ${sidebarOpen ? '' : 'sidebar-collapsed'} ${mobileOpen ? 'mobile-menu-open' : ''}`} style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)' }}>
+      <a href="#dashboard-content" className="skip-link">Skip to content</a>
+      {mobileOpen && <button className="sidebar-backdrop" aria-label="Close navigation" onClick={() => { setMobileOpen(false); menuToggleRef.current?.focus(); }} />}
       {/* Sidebar */}
       <aside
+        id="dashboard-navigation"
+        ref={sidebarRef}
+        className="dashboard-sidebar"
         style={{
           width: sidebarOpen ? 260 : 72,
           background: 'var(--bg-sidebar)',
@@ -157,6 +220,7 @@ export default function DashboardLayout() {
           zIndex: 50,
         }}
       >
+        <button className="mobile-navigation-close" aria-label="Close navigation" onClick={() => setMobileOpen(false)}>Close menu ×</button>
         {/* Header Branding with Vector Logo */}
         <div
           style={{
@@ -248,13 +312,24 @@ export default function DashboardLayout() {
         </div>
 
         {/* Navigation */}
-        <nav style={{ flex: 1, padding: '12px 8px', overflowY: 'auto' }}>
-          {navItems.map((item) => {
+        <nav aria-label="Main navigation" style={{ flex: 1, padding: '12px 8px', overflowY: 'auto' }}>
+          {sidebarOpen && <div className="navigation-tools">
+            <span className="navigation-caption">Your workspace</span>
+            <label className="navigation-search">
+              <IconSearch size={16} />
+              <input value={navSearch} onChange={(event) => setNavSearch(event.target.value)} placeholder="Find a page…" aria-label="Find a navigation page" />
+            </label>
+          </div>}
+          {visibleNavItems.length === 0 && <p className="navigation-empty">No matching pages.</p>}
+          {visibleNavItems.map((item) => {
             const IconComponent = item.icon;
             return (
               <NavLink
                 key={item.path}
                 to={item.path}
+                title={item.label}
+                aria-label={item.label}
+                className="dashboard-nav-link"
                 style={({ isActive }) => ({
                   display: 'flex',
                   alignItems: 'center',
@@ -319,6 +394,8 @@ export default function DashboardLayout() {
 
       {/* Main Container */}
       <div
+        className="dashboard-main"
+        inert={mobileOpen ? true : undefined}
         style={{
           flex: 1,
           marginLeft: sidebarOpen ? 260 : 72,
@@ -330,6 +407,7 @@ export default function DashboardLayout() {
       >
         {/* Top Header Bar */}
         <header
+          className="dashboard-header"
           style={{
             height: 64,
             background: 'var(--bg-secondary)',
@@ -344,7 +422,19 @@ export default function DashboardLayout() {
           }}
         >
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            ref={menuToggleRef}
+            aria-label="Toggle navigation"
+            aria-controls="dashboard-navigation"
+            aria-expanded={isMobile ? mobileOpen : sidebarOpen}
+            onClick={() => {
+              if (window.matchMedia('(max-width: 900px)').matches) {
+                setSidebarOpen(true);
+                setMobileOpen(!mobileOpen);
+              } else {
+                setNavSearch('');
+                setSidebarOpen(!sidebarOpen);
+              }
+            }}
             style={{
               background: 'var(--bg-surface-raised)',
               border: '1px solid var(--border-subtle)',
@@ -359,8 +449,11 @@ export default function DashboardLayout() {
             }}
             title="Toggle Sidebar"
           >
-            {sidebarOpen ? <IconChevronLeft size={18} /> : <IconChevronRight size={18} />}
+            <span className="desktop-menu-icon">{sidebarOpen ? <IconChevronLeft size={18} /> : <IconChevronRight size={18} />}</span>
+            <span className="mobile-menu-icon" aria-hidden="true">☰</span>
           </button>
+
+          <div className="workspace-heading"><span>{user?.role} portal</span><strong>{currentPage}</strong></div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, position: 'relative' }} ref={popoverRef}>
             {/* Notifications Button */}
@@ -381,6 +474,7 @@ export default function DashboardLayout() {
                 transition: 'all 0.2s',
               }}
               title="Notifications"
+              aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
             >
               <IconBell size={18} />
               {unreadCount > 0 && (
@@ -418,6 +512,8 @@ export default function DashboardLayout() {
                 gap: 8,
               }}
               title="Account & Settings"
+              aria-label="Account and settings"
+              aria-expanded={popoverOpen}
             >
               {user?.avatar ? (
                 <img
@@ -637,6 +733,7 @@ export default function DashboardLayout() {
         {/* Identity Verification Warning Banner for Citizen */}
         {user?.role === 'citizen' && !isProfileComplete && (
           <div
+            className="verification-banner"
             style={{
               background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(245, 158, 11, 0.12))',
               borderBottom: '1px solid rgba(239, 68, 68, 0.25)',
@@ -666,7 +763,7 @@ export default function DashboardLayout() {
         )}
 
         {/* Page content */}
-        <main style={{ padding: 24, flex: 1 }} className="animate-fade-in">
+        <main id="dashboard-content" tabIndex={-1} style={{ padding: 24, flex: 1 }} className="dashboard-content animate-fade-in">
           <Outlet />
         </main>
       </div>

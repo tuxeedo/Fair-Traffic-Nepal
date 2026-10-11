@@ -1,3 +1,4 @@
+import EmptyState from '../../components/EmptyState';
 import { useState, useEffect } from 'react';
 import { reportsAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -85,7 +86,7 @@ export default function MyReports() {
         </div>
       )}
       {loading ? <div className="skeleton" style={{ height: 200 }} /> : reports.length === 0 ? (
-        <div className="empty-state"><div className="empty-state-icon">📢</div><div className="empty-state-text">No reports submitted</div></div>
+        <EmptyState kind="report" label="Road reports" title="Start with a road report" description="Your submitted reports will appear here so you can follow their verification status." />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {reports.map(r => (

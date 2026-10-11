@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import DashboardArtwork from '../../components/DashboardArtwork';
 import {
   IconViolation,
   IconSearch,
@@ -22,7 +23,7 @@ export default function OfficerDashboard() {
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Header Banner */}
       <div
-        className="glass-card"
+        className="glass-card dashboard-welcome"
         style={{
           padding: '24px 28px',
           background: 'var(--bg-surface)',
@@ -35,8 +36,10 @@ export default function OfficerDashboard() {
           borderRadius: 16,
         }}
       >
+        <DashboardArtwork />
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          <span className="welcome-eyebrow">On duty · On the road</span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginBottom: 4 }}>
             <h1 className="page-title" style={{ margin: 0 }}>
               Jay Nepal, {user?.first_name || user?.username}!
             </h1>
@@ -115,26 +118,30 @@ export default function OfficerDashboard() {
       {/* Duty Action Grid */}
       <div>
         <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: 14 }}>Duty Actions</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
-          <div className="quick-action-card" onClick={() => navigate('/officer/record-violation')}>
+        <div className="dashboard-actions" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
+          <button className="quick-action-card" onClick={() => navigate('/officer/record-violation')}>
             <IconViolation size={22} color="var(--text-muted)" />
             <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Record Violation</span>
-          </div>
+            <small>Create an enforcement record</small>
+          </button>
 
-          <div className="quick-action-card" onClick={() => navigate('/officer/search-driver')}>
+          <button className="quick-action-card" onClick={() => navigate('/officer/search-driver')}>
             <IconSearch size={22} color="var(--text-muted)" />
             <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Search Driver</span>
-          </div>
+            <small>Find driver details and history</small>
+          </button>
 
-          <div className="quick-action-card" onClick={() => navigate('/officer/search-vehicle')}>
+          <button className="quick-action-card" onClick={() => navigate('/officer/search-vehicle')}>
             <IconCar size={22} color="var(--text-muted)" />
             <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Search Vehicle</span>
-          </div>
+            <small>Look up vehicle registration</small>
+          </button>
 
-          <div className="quick-action-card" onClick={() => navigate('/officer/reports')}>
+          <button className="quick-action-card" onClick={() => navigate('/officer/reports')}>
             <IconReport size={22} color="var(--text-muted)" />
             <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Verify Reports</span>
-          </div>
+            <small>Review citizen submissions</small>
+          </button>
         </div>
       </div>
     </div>

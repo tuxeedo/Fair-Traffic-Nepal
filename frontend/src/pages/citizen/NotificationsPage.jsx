@@ -1,3 +1,4 @@
+import EmptyState from '../../components/EmptyState';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificationsAPI } from '../../services/api';
@@ -76,10 +77,7 @@ export default function NotificationsPage() {
       {loading ? (
         <div className="skeleton" style={{ height: 300 }} />
       ) : notifications.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">🔔</div>
-          <div className="empty-state-text">No notifications found</div>
-        </div>
+        <EmptyState kind="bell" label="Notifications" title="No notifications to show" description="Updates about your vehicles, violations, appeals, and reports will appear here." />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {notifications.map((n) => {

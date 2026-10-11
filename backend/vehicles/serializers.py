@@ -1,8 +1,24 @@
 from rest_framework import serializers
 from .models import Vehicle, VehicleDocuments
+from .validators import normalize_registration_number, normalize_bluebook_number
+from rest_framework.validators import UniqueValidator
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
+
+
+class VehicleIdentifierField(serializers.CharField):
+    """Normalize before uniqueness checks; preserve unchanged historical values."""
+    def to_internal_value(self, data):
+        value = super().to_internal_value(data)
+        instance = getattr(self.parent, 'instance', None)
+        if instance is not None and value == getattr(instance, self.field_name):
+            return value
+        normalizer = normalize_registration_number if self.field_name == 'registration_number' else normalize_bluebook_number
+        try:
+            return normalizer(value)
+        except ValueError as error:
+            raise serializers.ValidationError(str(error))
 
 class VehicleDocumentsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -13,6 +29,8 @@ class VehicleDocumentsSerializer(serializers.ModelSerializer):
 class VehicleSerializer(serializers.ModelSerializer):
     """Full vehicle serializer for CRUD operations."""
     owner_name = serializers.CharField(source='owner.get_full_name', read_only=True)
+    registration_number = VehicleIdentifierField(max_length=30, validators=[UniqueValidator(queryset=Vehicle.objects.all(), lookup='iexact', message='A vehicle with this registration number already exists.')])
+    bluebook_number = VehicleIdentifierField(max_length=50, validators=[UniqueValidator(queryset=Vehicle.objects.all(), lookup='iexact', message='A vehicle with this bluebook number already exists.')])
     documents = VehicleDocumentsSerializer(read_only=True)
     
     bluebook_front_image = serializers.ImageField(write_only=True, required=False)

@@ -1,63 +1,63 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { violationsAPI } from '../../services/api';
+import { IconViolation, IconCreditCard, IconShieldCheck, IconSearch, IconWarning } from '../../components/Icons';
+
+const isUnpaid = v => v.action_taken === 'fine' && !v.is_paid && v.appeal_status !== 'accepted';
+const money = value => `NPR ${Number(value || 0).toLocaleString()}`;
 
 export default function ViolationHistory() {
   const [violations, setViolations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const navigate = useNavigate();
-
   useEffect(() => {
-    violationsAPI.my().then(res => setViolations(res.data.results || [])).catch(() => {}).finally(() => setLoading(false));
-  }, []);
-
+    let active = true;
+    setLoading(true); setError(false);
+    violationsAPI.my({ page }).then(res => { if (active) { setViolations(res.data.results || (Array.isArray(res.data) ? res.data : [])); setHasNext(Boolean(res.data.next)); } })
+      .catch(() => { if (active) setError(true); }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [page, attempt]);
+  const unpaid = violations.filter(isUnpaid);
+  const visible = violations.filter(v => {
+    const matches = `${v.violation_type_name || ''} ${v.vehicle_registration || ''} ${v.location_description || ''}`.toLowerCase().includes(query.toLowerCase().trim());
+    return matches && (filter === 'all' || (filter === 'unpaid' && isUnpaid(v)) || (filter === 'warnings' && v.action_taken === 'warning') || (filter === 'resolved' && (v.is_paid || v.appeal_status === 'accepted')));
+  });
   return (
-    <div className="animate-fade-in">
-      <div className="page-header"><h1 className="page-title">Violation History</h1><p className="page-subtitle">All your traffic violations</p></div>
-      {loading ? <div className="skeleton" style={{ height: 300 }} /> : violations.length === 0 ? (
-        <div className="empty-state"><div className="empty-state-icon">✅</div><div className="empty-state-text">No violations! Keep up the good driving.</div></div>
-      ) : (
-        <div className="glass-card" style={{ overflow: 'auto' }}>
-          <table className="data-table">
-            <thead><tr><th>Date</th><th>Violation</th><th>Category</th><th>Action</th><th>Fine</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>
-              {violations.map(v => (
-                <tr key={v.id}>
-                  <td>{new Date(v.created_at).toLocaleDateString()}</td>
-                  <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{v.violation_type_name}</td>
-                  <td><span className={`badge badge-${v.violation_category === 'dangerous' ? 'danger' : v.violation_category === 'major' ? 'warning' : 'info'}`}>{v.violation_category}</span></td>
-                  <td><span className={`badge badge-${v.action_taken === 'warning' ? 'warning' : 'fine'}`}>{v.action_taken}</span></td>
-                  <td>{v.action_taken === 'fine' ? `NPR ${v.fine_amount}` : '-'}</td>
-                  <td>
-                    {v.appeal_status === 'accepted' ? (
-                      <span className="badge badge-info" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                        Appeal Approved (Dismissed)
-                      </span>
-                    ) : v.action_taken === 'fine' ? (
-                      v.is_paid ? <span className="badge badge-success">Paid</span> : <span className="badge badge-danger">Unpaid</span>
-                    ) : (
-                      <span className="badge badge-info">N/A</span>
-                    )}
-                  </td>
-                  <td style={{ display: 'flex', gap: 8 }}>
-                    {v.action_taken === 'fine' && !v.is_paid && v.appeal_status !== 'accepted' && (
-                      <button className="btn btn-success btn-sm" onClick={() => navigate(`/citizen/pay/${v.id}`)}>Pay</button>
-                    )}
-                    {v.action_taken === 'fine' && v.appeal_status !== 'accepted' && (
-                      <button className="btn btn-ghost btn-sm" onClick={() => navigate('/citizen/appeals', { state: { violationId: v.id } })}>
-                        {v.appeal_status ? 'View Appeal' : 'Appeal'}
-                      </button>
-                    )}
-                    {v.appeal_status === 'accepted' && (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Resolved</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="violations-page animate-fade-in">
+      <div className="page-header"><span className="section-eyebrow">Your driving record</span><h1 className="page-title">Violation History</h1><p className="page-subtitle">Review traffic records, check payment status, and manage appeals.</p></div>
+      {loading ? <div className="skeleton" role="status" aria-label="Loading violations" style={{ height: 320 }} /> : error ? <div className="empty-state" role="alert"><h2>Couldn’t load violations</h2><p className="page-subtitle">Please try again to view your records.</p><button className="btn btn-primary" onClick={() => setAttempt(attempt + 1)}>Try again</button></div> : <>
+        <div className="violation-summary">
+          <div><span className="summary-icon"><IconViolation size={22} /></span><div><span>Records on this page</span><strong>{violations.length}</strong></div></div>
+          <div><span className="summary-icon summary-warning"><IconCreditCard size={22} /></span><div><span>Unpaid on this page</span><strong>{money(unpaid.reduce((total, v) => total + Number(v.fine_amount || 0), 0))}</strong></div></div>
+          <div><span className="summary-icon summary-success"><IconShieldCheck size={22} /></span><div><span>Resolved on this page</span><strong>{violations.filter(v => v.is_paid || v.appeal_status === 'accepted').length}</strong></div></div>
         </div>
-      )}
+        <section className="glass-card violation-records" aria-label="Violation records">
+          <div className="violation-toolbar"><div className="violation-filters" role="group" aria-label="Filter records on this page">
+            {[['all', 'All records'], ['unpaid', 'Unpaid'], ['warnings', 'Warnings'], ['resolved', 'Resolved']].map(([key, label]) => <button key={key} aria-pressed={filter === key} onClick={() => setFilter(key)}>{label}{key === 'unpaid' && <span>{unpaid.length}</span>}</button>)}
+          </div><label className="record-search"><IconSearch size={17} /><input aria-label="Search records on this page" placeholder="Search violation or vehicle…" value={query} onChange={e => setQuery(e.target.value)} /></label></div>
+          {visible.length === 0 ? <div className="empty-state"><IconShieldCheck size={36} /><h2>{violations.length ? 'No matching records' : 'No violations on this page'}</h2><p className="empty-state-text">{violations.length ? 'Try another filter or search term.' : 'Keep making safe choices on the road.'}</p></div> : <div className="violation-list">
+            {visible.map(v => <article className="violation-record" key={v.id}>
+              <div className={`violation-record-icon ${v.action_taken === 'warning' ? 'record-warning' : ''}`}>{v.action_taken === 'warning' ? <IconWarning size={22} /> : <IconViolation size={22} />}</div>
+              <div className="violation-record-body"><div className="violation-record-title"><h2>{v.violation_type_name}</h2><span className={`badge badge-${v.violation_category === 'dangerous' ? 'danger' : v.violation_category === 'major' ? 'warning' : 'info'}`}>{v.violation_category}</span></div>
+                <p className="violation-meta">{new Date(v.created_at).toLocaleDateString()}{v.vehicle_registration && <> · {v.vehicle_registration}</>}{v.location_description && <> · {v.location_description}</>}</p>
+                <div className="violation-status-line"><span className={`badge badge-${v.action_taken === 'warning' ? 'warning' : 'fine'}`}>{v.action_taken}</span>{v.appeal_status === 'accepted' ? <span className="badge badge-success">Appeal approved · Dismissed</span> : v.action_taken === 'fine' ? <span className={`badge badge-${v.is_paid ? 'success' : 'danger'}`}>{v.is_paid ? 'Paid' : 'Unpaid'}</span> : <span className="record-note">No payment required</span>}{v.appeal_status && v.appeal_status !== 'accepted' && <span className="record-note">Appeal: {v.appeal_status}</span>}</div>
+              </div>
+              <div className="violation-record-payment"><strong>{v.action_taken === 'fine' ? money(v.fine_amount) : 'Warning'}</strong><div className="violation-record-actions">
+                {isUnpaid(v) && <button className="btn btn-primary btn-sm" onClick={() => navigate(`/citizen/pay/${v.id}`)}>Pay fine</button>}
+                {v.action_taken === 'fine' && v.appeal_status !== 'accepted' && <button className="btn btn-ghost btn-sm" onClick={() => navigate('/citizen/appeals', { state: { violationId: v.id } })}>{v.appeal_status ? 'View appeal' : 'Appeal'}</button>}
+                {v.appeal_status === 'accepted' && <span className="record-note">Resolved</span>}
+              </div></div>
+            </article>)}
+          </div>}
+          <div className="records-footer"><span>{visible.length} of {violations.length} loaded records · Page {page}</span><div><button className="btn btn-ghost btn-sm" disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</button><button className="btn btn-ghost btn-sm" disabled={!hasNext} onClick={() => setPage(page + 1)}>Next</button></div></div>
+        </section>
+      </>}
     </div>
   );
 }

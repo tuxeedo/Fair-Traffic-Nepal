@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { violationsAPI, notificationsAPI, vehiclesAPI } from '../../services/api';
 import { getNotificationDestination } from '../../utils/notificationUtils';
+import UserProfileModal from '../../components/UserProfileModal';
+import DashboardArtwork from '../../components/DashboardArtwork';
 import {
   IconCar,
   IconViolation,
@@ -27,6 +29,7 @@ export default function CitizenDashboard() {
   const [notifications, setNotifications] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,7 +80,7 @@ export default function CitizenDashboard() {
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* 1. Hero Welcome Banner (Clean borderless card with Modern Indigo CTA button) */}
       <div
-        className="glass-card"
+        className="glass-card dashboard-welcome"
         style={{
           padding: '24px 28px',
           background: 'var(--bg-surface)',
@@ -90,8 +93,10 @@ export default function CitizenDashboard() {
           borderRadius: 16,
         }}
       >
+        <DashboardArtwork />
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          <span className="welcome-eyebrow">Your journey, made safer</span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginBottom: 6 }}>
             <h1 className="page-title" style={{ margin: 0 }}>
               Jay Nepal, {user?.first_name || user?.username}!
             </h1>
@@ -101,7 +106,7 @@ export default function CitizenDashboard() {
             </span>
           </div>
           <p className="page-subtitle" style={{ margin: 0 }}>
-            Here is your live Nepal FairTraffic safety overview and driving standing.
+            Manage your vehicles, check fines, and keep track of your road safety.
           </p>
         </div>
 
@@ -118,7 +123,7 @@ export default function CitizenDashboard() {
           }}
         >
           <IconMap size={18} />
-          <span>Open Live Traffic Map</span>
+          <span>Explore Traffic Map</span>
         </button>
       </div>
 
@@ -149,7 +154,7 @@ export default function CitizenDashboard() {
               </p>
             </div>
           </div>
-          <button className="btn btn-warning btn-sm" onClick={() => navigate('/citizen/dashboard')} style={{ borderRadius: 8 }}>
+          <button className="btn btn-primary btn-sm" onClick={() => setProfileOpen(true)} style={{ borderRadius: 8 }}>
             Complete Verification
           </button>
         </div>
@@ -158,7 +163,7 @@ export default function CitizenDashboard() {
       {/* 2, 3, 4. Minimal Modern Metric Cards Grid (Standardized Icon Styling & Big Consistent Stats) */}
       <div className="grid-stats">
         {/* Safety Score Card */}
-        <div className="stat-card">
+        <div className="stat-card stat-card-safety">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span className="stat-label">SAFETY SCORE</span>
@@ -187,6 +192,7 @@ export default function CitizenDashboard() {
             <span>Score Breakdown</span>
             <IconArrowRight size={14} />
           </Link>
+          <meter className="safety-meter" min="0" max="100" value={score} aria-label="Safety score out of 100" />
         </div>
 
         {/* Registered Vehicles Card */}
@@ -286,46 +292,53 @@ export default function CitizenDashboard() {
       {/* Quick Actions Grid */}
       <div>
         <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: 14 }}>Quick Actions</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 14 }}>
+        <div className="dashboard-actions" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 14 }}>
           <Link to="/citizen/violations" className="quick-action-card">
             <IconCreditCard size={22} color="var(--text-muted)" />
             <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Pay Fines</span>
+            <small>Review fines and payments</small>
           </Link>
 
           <Link to="/citizen/vehicles" className="quick-action-card">
             <IconCar size={22} color="var(--text-muted)" />
             <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>My Vehicles</span>
+            <small>Your registered vehicles</small>
           </Link>
 
           <Link to="/citizen/appeals" className="quick-action-card">
             <IconAppeal size={22} color="var(--text-muted)" />
             <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>File Appeal</span>
+            <small>Request a violation review</small>
           </Link>
 
           <Link to="/citizen/reports" className="quick-action-card">
             <IconReport size={22} color="var(--text-muted)" />
             <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Report Hazard</span>
+            <small>Help keep roads safe</small>
           </Link>
 
           <Link to="/citizen/map" className="quick-action-card">
             <IconMap size={22} color="var(--text-muted)" />
             <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Traffic Map</span>
+            <small>Explore road conditions</small>
           </Link>
 
           <Link to="/citizen/traffic-signs" className="quick-action-card">
             <IconTrafficLight size={22} color="var(--text-muted)" />
             <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Traffic Signs</span>
+            <small>Know the rules of the road</small>
           </Link>
 
           <Link to="/citizen/community-service" className="quick-action-card">
             <IconService size={22} color="var(--text-muted)" />
             <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Community Service</span>
+            <small>Track assigned activities</small>
           </Link>
         </div>
       </div>
 
       {/* Activity Feed Split View */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+      <div className="dashboard-split">
         {/* Recent Violations */}
         <div className="glass-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', borderRadius: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -482,6 +495,7 @@ export default function CitizenDashboard() {
           )}
         </div>
       </div>
+      <UserProfileModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
 }

@@ -1,52 +1,53 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import DashboardLayout from './layouts/DashboardLayout';
 
 // Auth pages
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 
 // Citizen pages
-import CitizenDashboard from './pages/citizen/CitizenDashboard';
-import MyVehicles from './pages/citizen/MyVehicles';
-import ViolationHistory from './pages/citizen/ViolationHistory';
-import WarningHistory from './pages/citizen/WarningHistory';
-import SafetyScorePage from './pages/citizen/SafetyScorePage';
-import AppealsPage from './pages/citizen/AppealsPage';
-import TrafficMap from './pages/citizen/TrafficMap';
-import MyReports from './pages/citizen/MyReports';
-import NotificationsPage from './pages/citizen/NotificationsPage';
-import PayFinePage from './pages/citizen/PayFinePage';
-import ComplaintsPage from './pages/citizen/ComplaintsPage';
-import MyCommunityService from './pages/citizen/MyCommunityService';
-import TrafficSignsPage from './pages/citizen/TrafficSignsPage';
+const CitizenDashboard = lazy(() => import('./pages/citizen/CitizenDashboard'));
+const MyVehicles = lazy(() => import('./pages/citizen/MyVehicles'));
+const ViolationHistory = lazy(() => import('./pages/citizen/ViolationHistory'));
+const WarningHistory = lazy(() => import('./pages/citizen/WarningHistory'));
+const SafetyScorePage = lazy(() => import('./pages/citizen/SafetyScorePage'));
+const AppealsPage = lazy(() => import('./pages/citizen/AppealsPage'));
+const TrafficMap = lazy(() => import('./pages/citizen/TrafficMap'));
+const MyReports = lazy(() => import('./pages/citizen/MyReports'));
+const NotificationsPage = lazy(() => import('./pages/citizen/NotificationsPage'));
+const PayFinePage = lazy(() => import('./pages/citizen/PayFinePage'));
+const ComplaintsPage = lazy(() => import('./pages/citizen/ComplaintsPage'));
+const MyCommunityService = lazy(() => import('./pages/citizen/MyCommunityService'));
+const TrafficSignsPage = lazy(() => import('./pages/citizen/TrafficSignsPage'));
 
 // Officer pages
-import OfficerDashboard from './pages/officer/OfficerDashboard';
-import SearchDriver from './pages/officer/SearchDriver';
-import SearchVehicle from './pages/officer/SearchVehicle';
-import RecordViolation from './pages/officer/RecordViolation';
-import OfficerLocations from './pages/officer/OfficerLocations';
-import VerifyReports from './pages/officer/VerifyReports';
-import OfficerStats from './pages/officer/OfficerStats';
+const OfficerDashboard = lazy(() => import('./pages/officer/OfficerDashboard'));
+const SearchDriver = lazy(() => import('./pages/officer/SearchDriver'));
+const SearchVehicle = lazy(() => import('./pages/officer/SearchVehicle'));
+const RecordViolation = lazy(() => import('./pages/officer/RecordViolation'));
+const OfficerLocations = lazy(() => import('./pages/officer/OfficerLocations'));
+const VerifyReports = lazy(() => import('./pages/officer/VerifyReports'));
+const OfficerStats = lazy(() => import('./pages/officer/OfficerStats'));
 
 // Admin pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import ManageUsers from './pages/admin/ManageUsers';
-import ManageOfficers from './pages/admin/ManageOfficers';
-import ManageViolations from './pages/admin/ManageViolations';
-import ManageRules from './pages/admin/ManageRules';
-import ReviewAppeals from './pages/admin/ReviewAppeals';
-import ManageReports from './pages/admin/ManageReports';
-import ReviewComplaints from './pages/admin/ReviewComplaints';
-import ManageLocations from './pages/admin/ManageLocations';
-import AnalyticsPage from './pages/admin/AnalyticsPage';
-import HeatmapPage from './pages/admin/HeatmapPage';
-import AuditLogPage from './pages/admin/AuditLogPage';
-import VerifyVehicles from './pages/admin/VerifyVehicles';
-import ManageCommunityService from './pages/admin/ManageCommunityService';
-import ReviewCorrections from './pages/admin/ReviewCorrections';
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const ManageUsers = lazy(() => import('./pages/admin/ManageUsers'));
+const ManageOfficers = lazy(() => import('./pages/admin/ManageOfficers'));
+const ManageViolations = lazy(() => import('./pages/admin/ManageViolations'));
+const ManageRules = lazy(() => import('./pages/admin/ManageRules'));
+const ReviewAppeals = lazy(() => import('./pages/admin/ReviewAppeals'));
+const ManageReports = lazy(() => import('./pages/admin/ManageReports'));
+const ReviewComplaints = lazy(() => import('./pages/admin/ReviewComplaints'));
+const ManageLocations = lazy(() => import('./pages/admin/ManageLocations'));
+const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage'));
+const HeatmapPage = lazy(() => import('./pages/admin/HeatmapPage'));
+const AuditLogPage = lazy(() => import('./pages/admin/AuditLogPage'));
+const VerifyVehicles = lazy(() => import('./pages/admin/VerifyVehicles'));
+const ManageCommunityService = lazy(() => import('./pages/admin/ManageCommunityService'));
+const ReviewCorrections = lazy(() => import('./pages/admin/ReviewCorrections'));
 
 
 
@@ -72,6 +73,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
+          <Suspense fallback={<div className="empty-state" role="status">Loading page…</div>}>
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
@@ -131,6 +133,7 @@ export default function App() {
             {/* Catch all */}
             <Route path="*" element={<RedirectHome />} />
           </Routes>
+          </Suspense>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

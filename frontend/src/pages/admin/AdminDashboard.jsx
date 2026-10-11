@@ -1,19 +1,7 @@
 import { useState, useEffect } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  ArcElement,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-} from 'chart.js';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import AdminViolationCharts from '../../components/AdminViolationCharts';
 import { analyticsAPI, correctionsAPI } from '../../services/api';
+import DashboardArtwork from '../../components/DashboardArtwork';
 import {
   IconViolation,
   IconWarning,
@@ -21,20 +9,8 @@ import {
   IconAppeal,
   IconReport,
   IconShieldCheck,
-  IconAnalytics,
   IconTrendingUp,
 } from '../../components/Icons';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend, Filler);
-
-const chartOpts = {
-  responsive: true,
-  plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 } } } },
-  scales: {
-    x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(51,65,85,0.2)' } },
-    y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(51,65,85,0.2)' } },
-  },
-};
 
 export default function AdminDashboard() {
   const [summary, setSummary] = useState(null);
@@ -42,8 +18,13 @@ export default function AdminDashboard() {
   const [byType, setByType] = useState([]);
   const [pendingCorrections, setPendingCorrections] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError(false);
     Promise.all([
       analyticsAPI.dashboard(),
       analyticsAPI.dailyViolations({ days: 30 }),
@@ -51,49 +32,19 @@ export default function AdminDashboard() {
       correctionsAPI.allCorrections({ status: 'Pending' }),
     ])
       .then(([s, d, t, c]) => {
+        if (!active) return;
         setSummary(s.data);
         setDaily(d.data);
         setByType(t.data);
         setPendingCorrections((c.data.results || c.data || []).length);
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+      .catch(() => { if (active) setError(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [attempt]);
 
   if (loading) return <div className="skeleton" style={{ height: 400, borderRadius: 14 }} />;
-
-  const dailyChart = {
-    labels: daily.map((d) => new Date(d.date).toLocaleDateString('en', { month: 'short', day: 'numeric' })),
-    datasets: [
-      { label: 'Warnings', data: daily.map((d) => d.warnings), backgroundColor: 'rgba(245,158,11,0.7)', borderRadius: 6 },
-      { label: 'Fines', data: daily.map((d) => d.fines), backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 6 },
-    ],
-  };
-
-  const typeChart = {
-    labels: byType.map((t) => t.violation_type__name),
-    datasets: [
-      {
-        data: byType.map((t) => t.count),
-        backgroundColor: [
-          '#6366f1',
-          '#06b6d4',
-          '#10b981',
-          '#f59e0b',
-          '#ef4444',
-          '#8b5cf6',
-          '#ec4899',
-          '#f97316',
-          '#14b8a6',
-          '#e11d48',
-          '#84cc16',
-          '#3b82f6',
-          '#d946ef',
-          '#a855f7',
-        ],
-      },
-    ],
-  };
+  if (error) return <div className="empty-state" role="alert"><h2>Dashboard data unavailable</h2><p className="page-subtitle">Please try again to load the charts and statistics.</p><button className="btn btn-primary" onClick={() => setAttempt(attempt + 1)}>Try again</button></div>;
 
   const stats = [
     { label: 'TOTAL VIOLATIONS', value: summary?.total_violations || 0, subtext: 'System recorded', icon: IconViolation },
@@ -109,9 +60,11 @@ export default function AdminDashboard() {
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div className="page-header" style={{ marginBottom: 8 }}>
+      <div className="page-header dashboard-welcome" style={{ marginBottom: 8 }}>
+        <DashboardArtwork />
+        <span className="welcome-eyebrow">Traffic operations overview</span>
         <h1 className="page-title">Admin Dashboard</h1>
-        <p className="page-subtitle">Real-time system statistics and violation analytics</p>
+        <p className="page-subtitle">Review pending work and monitor traffic enforcement across the system.</p>
       </div>
 
       <div className="grid-stats">
@@ -141,34 +94,7 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }}>
-        <div className="glass-card" style={{ padding: 24, borderRadius: 14 }}>
-          <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <IconAnalytics size={18} color="var(--text-muted)" />
-            <span>Daily Violations (Last 30 Days)</span>
-          </h3>
-          <Bar data={dailyChart} options={chartOpts} />
-        </div>
-
-        <div className="glass-card" style={{ padding: 24, borderRadius: 14 }}>
-          <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <IconTrendingUp size={18} color="var(--text-muted)" />
-            <span>By Violation Type</span>
-          </h3>
-          <Doughnut
-            data={typeChart}
-            options={{
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: 'bottom',
-                  labels: { color: '#94a3b8', padding: 10, font: { family: 'Inter', size: 11 } },
-                },
-              },
-            }}
-          />
-        </div>
-      </div>
+      <AdminViolationCharts daily={daily} byType={byType} />
     </div>
   );
 }

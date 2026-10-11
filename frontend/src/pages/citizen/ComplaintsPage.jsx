@@ -1,3 +1,4 @@
+import EmptyState from '../../components/EmptyState';
 import { useState, useEffect } from 'react';
 import { complaintsAPI, violationsAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -138,10 +139,7 @@ export default function ComplaintsPage() {
       {loading ? (
         <div className="skeleton" style={{ height: 200 }} />
       ) : complaints.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">🛡️</div>
-          <div className="empty-state-text">No complaints filed yet</div>
-        </div>
+        <EmptyState kind="shield" label="Officer complaints" title="No complaints to show" description="Submitted complaints and their review status will appear here." />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {complaints.map(c => (
