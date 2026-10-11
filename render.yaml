@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: "./backend/build.sh"
-    startCommand: "gunicorn --chdir backend fairtraffic.wsgi:application --bind 0.0.0.0:$PORT"
+    startCommand: "gunicorn --chdir backend fairtraffic.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -18,6 +18,10 @@ services:
         value: ".onrender.com"
       - key: PYTHON_VERSION
         value: "3.11.9"
+      # Set this to your Vercel frontend URL after deployment, e.g.:
+      # https://fair-traffic-nepal.vercel.app
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://fair-traffic-nepal.vercel.app"
 
 databases:
   - name: fairtraffic-db
