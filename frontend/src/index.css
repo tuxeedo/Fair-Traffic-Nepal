@@ -941,6 +941,9 @@ input:checked + .toggle-slider:before {
 .mobile-menu-icon, .mobile-navigation-close, .sidebar-backdrop { display: none; }
 
 /* Driving records and analytics panels */
+.dashboard-stat-link { display: block; color: inherit; text-decoration: none; cursor: pointer; }
+.dashboard-stat-link:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 4px; }
+.dashboard-stat-link:hover .stat-subtext { color: var(--color-primary); }
 .driving-quiz { width: 100%; max-width: 850px; margin: 0 auto; padding: clamp(18px, 4vw, 32px); }
 .driving-quiz h2 { margin: 8px 0 12px; }
 .quiz-intro, .quiz-result p { color: var(--text-secondary); line-height: 1.7; }

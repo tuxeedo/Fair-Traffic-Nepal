@@ -1,14 +1,17 @@
+import { useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { reportsAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 
 export default function ManageReports() {
+  const [params, setParams] = useSearchParams();
+  const status = params.get('status') === 'pending' ? 'pending' : 'all';
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
 
-  const fetch = () => reportsAPI.all().then(res => setReports(res.data.results || [])).catch(() => {}).finally(() => setLoading(false));
-  useEffect(() => { fetch(); }, []);
+  const fetch = () => reportsAPI.all(status === 'pending' ? { status: 'pending' } : {}).then(res => setReports(res.data.results || [])).catch(() => {}).finally(() => setLoading(false));
+  useEffect(() => { fetch(); }, [status]);
 
   const review = async (id, action) => {
     try { await reportsAPI.review(id, { action, review_remarks: `${action} by admin.` }); showToast(`Report ${action}`); fetch(); }
@@ -18,6 +21,7 @@ export default function ManageReports() {
   return (
     <div className="animate-fade-in">
       <div className="page-header"><h1 className="page-title">Manage Reports</h1><p className="page-subtitle">Review community reports</p></div>
+      <div style={{ marginBottom: 20 }}><label>Show <select className="form-select" value={status} onChange={e => setParams(e.target.value === 'pending' ? { status: 'pending' } : {})} style={{ width: 'auto', marginLeft: 8 }}><option value="all">All records</option><option value="pending">Pending review</option></select></label></div>
       {loading ? <div className="skeleton" style={{ height: 300 }} /> : (
         <div className="glass-card" style={{ overflow: 'auto' }}>
           <table className="data-table">

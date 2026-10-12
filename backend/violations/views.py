@@ -209,11 +209,25 @@ class AllViolationsView(generics.ListAPIView):
     serializer_class = ViolationSerializer
     permission_classes = [IsAdmin]
     queryset = Violation.objects.select_related(
-        'violation_type', 'officer', 'vehicle', 'driver'
+        'violation_type', 'officer', 'vehicle', 'driver', 'appeal'
     ).all()
     filterset_fields = ['action_taken', 'is_paid', 'violation_type', 'officer', 'driver']
     search_fields = ['driver__first_name', 'driver__last_name', 'location_description']
     ordering_fields = ['created_at', 'fine_amount']
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        view = self.request.query_params.get('view', 'all')
+        if view in ('active', 'recent', 'warnings', 'fines', 'unpaid', 'paid'):
+            queryset = queryset.active()
+        if view == 'recent':
+            from datetime import timedelta
+            queryset = queryset.filter(created_at__date__gte=timezone.now().date() - timedelta(days=30))
+        if view in ('warnings', 'fines', 'unpaid', 'paid'):
+            queryset = queryset.filter(action_taken='warning' if view == 'warnings' else 'fine')
+        if view in ('unpaid', 'paid'):
+            queryset = queryset.filter(is_paid=view == 'paid')
+        return queryset
 
 
 class DriverViolationsView(generics.ListAPIView):

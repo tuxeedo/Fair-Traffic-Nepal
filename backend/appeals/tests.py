@@ -161,6 +161,19 @@ class AppealWorkflowTestCase(TestCase):
         for endpoint in ['daily-violations', 'monthly-violations', 'violations-by-type', 'top-offenders', 'heatmap']:
             self.assertEqual(self.admin_client.get(f'/api/v1/analytics/{endpoint}/').data, [])
 
+    def test_dashboard_drilldown_filters_server_records(self):
+        cancelled = Violation.objects.create(driver=self.citizen, officer=self.officer, violation_type=self.violation_type, action_taken='fine', fine_amount=500)
+        Appeal.objects.create(violation=cancelled, citizen=self.citizen, reason='Incorrect', status='accepted')
+        paid = Violation.objects.create(driver=self.citizen, officer=self.officer, violation_type=self.violation_type, action_taken='fine', fine_amount=700, is_paid=True)
+        warning = Violation.objects.create(driver=self.citizen, officer=self.officer, violation_type=self.violation_type, action_taken='warning')
+        expected = {'unpaid': [self.violation.id], 'paid': [paid.id], 'warnings': [warning.id], 'fines': [self.violation.id, paid.id], 'active': [self.violation.id, paid.id, warning.id]}
+        for view, ids in expected.items():
+            response = self.admin_client.get('/api/v1/violations/all/', {'view': view})
+            self.assertEqual(response.status_code, 200)
+            self.assertCountEqual([item['id'] for item in response.data['results']], ids)
+        self.assertEqual(self.admin_client.get('/api/v1/violations/all/', {'view': 'all'}).data['count'], 4)
+        self.assertEqual(self.citizen_client.get('/api/v1/violations/all/', {'view': 'unpaid'}).status_code, 403)
+
     def test_rejection_keeps_fine_collectible(self):
         appeal = Appeal.objects.create(violation=self.violation, citizen=self.citizen, reason='Disputed')
         response = self.admin_client.post(f'/api/v1/appeals/{appeal.id}/review/', {'action': 'rejected', 'admin_remarks': 'Evidence supports the record'})

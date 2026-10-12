@@ -1,6 +1,9 @@
-import { isCancelled, isUnpaidFine } from '../../utils/violationStatus';
+import { isCancelled } from '../../utils/violationStatus';
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { violationsAPI, evidenceAPI } from '../../services/api';
+
+const views = { all: 'All Violations', active: 'Active Violations', recent: 'Violations in the Last 30 Days', warnings: 'Warnings Issued', fines: 'Fines Issued', unpaid: 'Unpaid Fines', paid: 'Paid Fines' };
 
 export default function ManageViolations() {
   const [violations, setViolations] = useState([]);
@@ -8,13 +11,26 @@ export default function ManageViolations() {
   const [selectedViolation, setSelectedViolation] = useState(null);
   const [evidence, setEvidence] = useState([]);
   const [loadingEvidence, setLoadingEvidence] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const view = Object.hasOwn(views, params.get('view')) ? params.get('view') : 'all';
+  const page = Math.max(1, Number.parseInt(params.get('page'), 10) || 1);
+  const search = params.get('search') || '';
+  const [searchInput, setSearchInput] = useState(search);
+  const [count, setCount] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const changeView = nextView => setParams({ view: nextView });
 
   useEffect(() => {
-    violationsAPI.all()
-      .then(res => setViolations(res.data.results || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    let active = true;
+    setLoading(true); setError(false); setSearchInput(search); setSelectedViolation(null);
+    violationsAPI.all({ view, page, ...(search ? { search } : {}) })
+      .then(res => { if (active) { const records = res.data.results || (Array.isArray(res.data) ? res.data : []); setViolations(records); setCount(res.data.count ?? records.length); setHasNext(Boolean(res.data.next)); } })
+      .catch(() => { if (active) setError(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [view, page, search, attempt]);
 
   const viewEvidence = async (v) => {
     setSelectedViolation(v);
@@ -33,11 +49,19 @@ export default function ManageViolations() {
   return (
     <div className="animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">All Violations</h1>
-        <p className="page-subtitle">System-wide records, including cancelled cases retained for audit history</p>
+        <h1 className="page-title">{views[view]}</h1>
+        <p className="page-subtitle">{view === 'unpaid' ? 'Drivers with outstanding fines. Accepted appeals are excluded.' : view === 'all' ? 'System-wide records, including cancelled cases retained for audit history' : 'Records matching the selected dashboard view. Cancelled cases are excluded.'}</p>
       </div>
 
-      {loading ? <div className="skeleton" style={{ height: 300 }} /> : (
+      <div className="glass-card" style={{ padding: 20, marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'end' }}>
+        <label style={{ display: 'grid', gap: 8 }}>View<select className="form-select" value={view} onChange={e => changeView(e.target.value)}>{Object.entries(views).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+        <form onSubmit={e => { e.preventDefault(); setParams({ view, ...(searchInput.trim() ? { search: searchInput.trim() } : {}) }); }} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, flex: 1 }}>
+          <input className="form-input" aria-label="Search drivers or locations" placeholder="Search driver name or location" value={searchInput} onChange={e => setSearchInput(e.target.value)} style={{ flex: 1, minWidth: 180 }} />
+          <button className="btn btn-primary" type="submit">Search</button>
+        </form>
+      </div>
+
+      {loading ? <div className="skeleton" style={{ height: 300 }} /> : error ? <div className="empty-state" role="alert"><h2>Records couldn’t be loaded</h2><button className="btn btn-primary" onClick={() => setAttempt(attempt + 1)}>Try again</button></div> : violations.length === 0 ? <div className="empty-state"><h2>No matching records</h2><p className="page-subtitle">Try another view or search.</p></div> : (
         <div className="glass-card" style={{ overflow: 'auto' }}>
           <table className="data-table">
             <thead>
@@ -87,6 +111,8 @@ export default function ManageViolations() {
           </table>
         </div>
       )}
+
+      {!loading && !error && <div className="records-footer"><span>{count} matching records · Page {page}</span><div><button className="btn btn-ghost btn-sm" disabled={page === 1} onClick={() => setParams({ view, ...(search ? { search } : {}), page: String(page - 1) })}>Previous</button><button className="btn btn-ghost btn-sm" disabled={!hasNext} onClick={() => setParams({ view, ...(search ? { search } : {}), page: String(page + 1) })}>Next</button></div></div>}
 
       {selectedViolation && (
         <div style={{

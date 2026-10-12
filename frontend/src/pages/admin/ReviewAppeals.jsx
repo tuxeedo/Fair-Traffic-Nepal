@@ -1,9 +1,12 @@
+import { useSearchParams } from 'react-router-dom';
 import EmptyState from '../../components/EmptyState';
 import { useState, useEffect } from 'react';
 import { appealsAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 
 export default function ReviewAppeals() {
+  const [params, setParams] = useSearchParams();
+  const status = params.get('status') === 'pending' ? 'pending' : 'all';
   const [appeals, setAppeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reviewingId, setReviewingId] = useState(null);
@@ -12,14 +15,14 @@ export default function ReviewAppeals() {
 
   const fetch = () =>
     appealsAPI
-      .all()
+      .all(status === 'pending' ? { status: 'pending' } : {})
       .then(res => setAppeals(res.data.results || (Array.isArray(res.data) ? res.data : [])))
       .catch(() => {})
       .finally(() => setLoading(false));
 
   useEffect(() => {
     fetch();
-  }, []);
+  }, [status]);
 
   const review = async (id, action) => {
     try {
@@ -40,6 +43,7 @@ export default function ReviewAppeals() {
         <p className="page-subtitle">Accept or reject citizen violation appeals</p>
       </div>
 
+      <div style={{ marginBottom: 20 }}><label>Show <select className="form-select" value={status} onChange={e => setParams(e.target.value === 'pending' ? { status: 'pending' } : {})} style={{ width: 'auto', marginLeft: 8 }}><option value="all">All records</option><option value="pending">Pending review</option></select></label></div>
       {loading ? (
         <div className="skeleton" style={{ height: 300 }} />
       ) : appeals.length === 0 ? (
