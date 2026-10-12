@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { usersAPI, violationsAPI } from '../../services/api';
+import { isCancelled } from '../../utils/violationStatus';
 
 export default function SearchDriver() {
   const [query, setQuery] = useState('');
@@ -54,8 +55,8 @@ export default function SearchDriver() {
                 <tr key={v.id}>
                   <td>{new Date(v.created_at).toLocaleDateString()}</td>
                   <td>{v.violation_type_name}</td>
-                  <td><span className={`badge badge-${v.action_taken === 'warning' ? 'warning' : 'fine'}`}>{v.action_taken}</span></td>
-                  <td>{v.fine_amount > 0 ? `NPR ${v.fine_amount}` : '-'}</td>
+                  <td><span className={`badge badge-${isCancelled(v) ? 'success' : v.action_taken === 'warning' ? 'warning' : 'fine'}`}>{isCancelled(v) ? 'Cancelled · Appeal accepted' : v.action_taken}</span></td>
+                  <td>{isCancelled(v) ? 'No fine due' : v.fine_amount > 0 ? `NPR ${v.fine_amount}` : '-'}</td>
                 </tr>
               ))}</tbody>
             </table>

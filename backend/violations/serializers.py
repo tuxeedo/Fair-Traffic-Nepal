@@ -58,6 +58,9 @@ class ViolationSerializer(serializers.ModelSerializer):
     )
     warning = WarningSerializer(read_only=True)
     appeal_status = serializers.SerializerMethodField()
+    is_cancelled = serializers.BooleanField(read_only=True)
+    fine_due = serializers.SerializerMethodField()
+    payment_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Violation
@@ -67,6 +70,7 @@ class ViolationSerializer(serializers.ModelSerializer):
             'violation_category', 'action_taken', 'fine_amount', 'is_paid',
             'paid_at', 'gps_lat', 'gps_lng', 'location_description',
             'officer_remarks', 'rule_applied', 'warning', 'appeal_status', 'created_at',
+            'is_cancelled', 'fine_due', 'payment_status',
         ]
         read_only_fields = [
             'id', 'officer', 'action_taken', 'fine_amount',
@@ -77,6 +81,16 @@ class ViolationSerializer(serializers.ModelSerializer):
         if hasattr(obj, 'appeal') and obj.appeal:
             return obj.appeal.status
         return None
+
+    def get_fine_due(self, obj):
+        return str(obj.fine_amount) if obj.action_taken == 'fine' and not obj.is_paid and not obj.is_cancelled else '0.00'
+
+    def get_payment_status(self, obj):
+        if obj.is_cancelled:
+            return 'cancelled'
+        if obj.action_taken != 'fine':
+            return 'not_required'
+        return 'paid' if obj.is_paid else 'unpaid'
 
 
 class RecordViolationSerializer(serializers.Serializer):

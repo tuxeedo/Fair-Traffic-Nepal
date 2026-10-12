@@ -1,3 +1,4 @@
+import { isCancelled, isUnpaidFine } from '../../utils/violationStatus';
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -64,7 +65,7 @@ export default function CitizenDashboard() {
   const rank = getRankBadge(score);
   const RankIcon = rank.icon;
 
-  const unpaidFines = violations.filter((v) => v.action_taken === 'fine' && !v.is_paid && v.appeal_status !== 'accepted');
+  const unpaidFines = violations.filter(isUnpaidFine);
   const totalFinesSum = unpaidFines.reduce((sum, v) => sum + parseFloat(v.fine_amount || 0), 0);
 
   if (loading) {
@@ -234,7 +235,7 @@ export default function CitizenDashboard() {
               <IconViolation size={20} color="var(--text-muted)" />
             </div>
             <div style={{ marginTop: 12, display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span className="stat-value">{violations.length || 0}</span>
+              <span className="stat-value">{violations.filter(v => !isCancelled(v)).length || 0}</span>
             </div>
           </div>
           <Link
@@ -351,7 +352,7 @@ export default function CitizenDashboard() {
             </Link>
           </div>
 
-          {violations.length === 0 ? (
+          {violations.filter(v => !isCancelled(v)).length === 0 ? (
             <div
               className="empty-state"
               style={{
@@ -370,7 +371,7 @@ export default function CitizenDashboard() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {violations.slice(0, 4).map((v) => (
+              {violations.filter(v => !isCancelled(v)).slice(0, 4).map((v) => (
                 <div
                   key={v.id}
                   style={{
@@ -393,7 +394,7 @@ export default function CitizenDashboard() {
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {v.appeal_status === 'accepted' ? (
+                    {isCancelled(v) ? (
                       <span className="badge badge-success" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
                         Appeal Approved
                       </span>

@@ -87,6 +87,12 @@ class TrafficRule(models.Model):
         return f"{self.violation_type.name} — Offense #{self.offense_number} → {self.get_action_display()}"
 
 
+class ViolationQuerySet(models.QuerySet):
+    def active(self):
+        """Enforceable incidents, excluding those overturned on appeal."""
+        return self.exclude(appeal__status='accepted')
+
+
 class Violation(models.Model):
     """
     A recorded traffic violation incident.
@@ -135,6 +141,12 @@ class Violation(models.Model):
         help_text='The traffic rule that was applied by the rule engine.',
     )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = ViolationQuerySet.as_manager()
+
+    @property
+    def is_cancelled(self):
+        return hasattr(self, 'appeal') and self.appeal.status == 'accepted'
 
     class Meta:
         ordering = ['-created_at']

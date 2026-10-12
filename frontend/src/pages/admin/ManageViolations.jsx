@@ -1,3 +1,4 @@
+import { isCancelled, isUnpaidFine } from '../../utils/violationStatus';
 import { useState, useEffect } from 'react';
 import { violationsAPI, evidenceAPI } from '../../services/api';
 
@@ -33,7 +34,7 @@ export default function ManageViolations() {
     <div className="animate-fade-in">
       <div className="page-header">
         <h1 className="page-title">All Violations</h1>
-        <p className="page-subtitle">System-wide violation records</p>
+        <p className="page-subtitle">System-wide records, including cancelled cases retained for audit history</p>
       </div>
 
       {loading ? <div className="skeleton" style={{ height: 300 }} /> : (
@@ -47,7 +48,7 @@ export default function ManageViolations() {
                 <th>Violation</th>
                 <th>Action</th>
                 <th>Fine</th>
-                <th>Paid</th>
+                <th>Status</th>
                 <th>Officer</th>
                 <th>Location</th>
                 <th>Evidence</th>
@@ -65,11 +66,11 @@ export default function ManageViolations() {
                       {v.action_taken}
                     </span>
                   </td>
-                  <td>{v.fine_amount > 0 ? `NPR ${v.fine_amount}` : '-'}</td>
+                  <td>{isCancelled(v) ? 'Cancelled · No fine due' : v.fine_amount > 0 ? `NPR ${v.fine_amount}` : '-'}</td>
                   <td>
-                    {v.action_taken === 'fine' ? (
+                    {isCancelled(v) ? <span className="badge badge-success">Cancelled · Appeal accepted</span> : v.action_taken === 'fine' ? (
                       <span className={`badge badge-${v.is_paid ? 'success' : 'danger'}`}>
-                        {v.is_paid ? 'Yes' : 'No'}
+                        {v.is_paid ? 'Paid' : 'Unpaid'}
                       </span>
                     ) : '-'}
                   </td>

@@ -2,6 +2,7 @@ from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.utils import timezone
+from django.db import transaction
 
 from django.contrib.auth import get_user_model
 from accounts.permissions import IsAdmin, IsCitizen
@@ -106,9 +107,10 @@ class ReviewAppealView(APIView):
 
     permission_classes = [IsAdmin]
 
+    @transaction.atomic
     def post(self, request, pk):
         try:
-            appeal = Appeal.objects.select_related('violation', 'citizen').get(pk=pk)
+            appeal = Appeal.objects.select_for_update().get(pk=pk)
         except Appeal.DoesNotExist:
             return Response({'error': 'Appeal not found.'}, status=404)
 
@@ -126,9 +128,9 @@ class ReviewAppealView(APIView):
 
         if action == 'accepted':
             appeal.status = Appeal.Status.ACCEPTED
-            violation = appeal.violation
-            violation.is_paid = True  # Mark as resolved
-            violation.save()
+            # Cancellation follows the accepted appeal. It is not a payment.
+            from violations.models import Violation
+            violation = Violation.objects.select_for_update().get(pk=appeal.violation_id)
             restore_safety_score(appeal.citizen, violation)
         else:
             # Action is 'rejected'

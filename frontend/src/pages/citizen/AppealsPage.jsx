@@ -1,3 +1,4 @@
+import { isCancelled, isUnpaidFine } from '../../utils/violationStatus';
 import EmptyState from '../../components/EmptyState';
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -35,7 +36,7 @@ export default function AppealsPage() {
       // Filter eligible penalty violations: unpaid, action_taken !== 'warning', and
       // either no existing appeal OR appeal_count === 1 and status === 'rejected'
       const eligible = violList.filter(v => {
-        if (v.action_taken === 'warning' || v.is_paid) return false;
+        if (isCancelled(v) || v.action_taken === 'warning' || v.is_paid) return false;
         const existing = appealMap[v.id];
         if (!existing) return true;
         if (existing.appeal_count === 1 && existing.status === 'rejected') return true;

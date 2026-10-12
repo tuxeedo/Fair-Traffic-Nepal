@@ -29,16 +29,16 @@ class DashboardSummaryView(APIView):
         today = timezone.now().date()
         thirty_days_ago = today - timedelta(days=30)
 
-        total_violations = Violation.objects.count()
-        violations_this_month = Violation.objects.filter(
+        total_violations = Violation.objects.active().count()
+        violations_this_month = Violation.objects.active().filter(
             created_at__date__gte=thirty_days_ago
         ).count()
-        total_warnings = Violation.objects.filter(action_taken='warning').count()
-        total_fines = Violation.objects.filter(action_taken='fine').count()
-        unpaid_fines = Violation.objects.filter(
+        total_warnings = Violation.objects.active().filter(action_taken='warning').count()
+        total_fines = Violation.objects.active().filter(action_taken='fine').count()
+        unpaid_fines = Violation.objects.active().filter(
             action_taken='fine', is_paid=False
         ).count()
-        total_revenue = Violation.objects.filter(
+        total_revenue = Violation.objects.active().filter(
             action_taken='fine', is_paid=True
         ).aggregate(total=Sum('fine_amount'))['total'] or 0
         pending_appeals = Appeal.objects.filter(status='pending').count()
@@ -48,6 +48,7 @@ class DashboardSummaryView(APIView):
 
         return Response({
             'total_violations': total_violations,
+            'cancelled_violations': Violation.objects.filter(appeal__status='accepted').count(),
             'violations_this_month': violations_this_month,
             'total_warnings': total_warnings,
             'total_fines': total_fines,
@@ -70,7 +71,7 @@ class DailyViolationsView(APIView):
         start_date = timezone.now().date() - timedelta(days=days)
 
         data = (
-            Violation.objects.filter(created_at__date__gte=start_date)
+            Violation.objects.active().filter(created_at__date__gte=start_date)
             .annotate(date=TruncDate('created_at'))
             .values('date')
             .annotate(
@@ -94,7 +95,7 @@ class MonthlyViolationsView(APIView):
         start_date = timezone.now().date() - timedelta(days=months * 30)
 
         data = (
-            Violation.objects.filter(created_at__date__gte=start_date)
+            Violation.objects.active().filter(created_at__date__gte=start_date)
             .annotate(month=TruncMonth('created_at'))
             .values('month')
             .annotate(
@@ -115,7 +116,7 @@ class ViolationsByTypeView(APIView):
 
     def get(self, request):
         data = (
-            Violation.objects
+            Violation.objects.active()
             .values('violation_type__name', 'violation_type__category')
             .annotate(count=Count('id'))
             .order_by('-count')
@@ -131,7 +132,7 @@ class TopOffendersView(APIView):
     def get(self, request):
         limit = int(request.query_params.get('limit', 10))
         data = (
-            Violation.objects
+            Violation.objects.active()
             .values(
                 'driver__id',
                 'driver__first_name',
@@ -154,7 +155,7 @@ class ViolationHeatmapView(APIView):
 
     def get(self, request):
         data = (
-            Violation.objects
+            Violation.objects.active()
             .filter(gps_lat__isnull=False, gps_lng__isnull=False)
             .values('gps_lat', 'gps_lng', 'violation_type__name')
             .annotate(intensity=Count('id'))
@@ -175,7 +176,7 @@ class OfficerPerformanceView(APIView):
         result = []
         for officer in officers:
             oid = officer['id']
-            violations = Violation.objects.filter(officer_id=oid)
+            violations = Violation.objects.active().filter(officer_id=oid)
             appeals_overturned = Appeal.objects.filter(
                 violation__officer_id=oid, status='accepted'
             ).count()

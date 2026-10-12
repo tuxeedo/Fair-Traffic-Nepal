@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -187,7 +188,7 @@ class MyViolationsView(generics.ListAPIView):
     def get_queryset(self):
         return Violation.objects.filter(
             driver=self.request.user
-        ).select_related('violation_type', 'officer', 'vehicle', 'warning')
+        ).select_related('violation_type', 'officer', 'vehicle', 'warning', 'appeal')
 
 
 class ViolationDetailView(generics.RetrieveAPIView):
@@ -195,7 +196,7 @@ class ViolationDetailView(generics.RetrieveAPIView):
 
     serializer_class = ViolationSerializer
     queryset = Violation.objects.select_related(
-        'violation_type', 'officer', 'vehicle', 'driver', 'warning'
+        'violation_type', 'officer', 'vehicle', 'driver', 'appeal', 'warning', 'appeal'
     )
 
     def get_permissions(self):
@@ -239,7 +240,7 @@ class MyWarningsView(generics.ListAPIView):
     def get_queryset(self):
         return Warning.objects.filter(
             violation__driver=self.request.user
-        ).select_related('violation')
+        ).exclude(violation__appeal__status='accepted').select_related('violation')
 
 
 class AcknowledgeWarningView(APIView):
@@ -268,9 +269,10 @@ class PayFineView(APIView):
 
     permission_classes = [IsCitizen]
 
+    @transaction.atomic
     def post(self, request, pk):
         try:
-            violation = Violation.objects.get(
+            violation = Violation.objects.select_for_update().get(
                 pk=pk, driver=request.user, action_taken='fine', is_paid=False
             )
         except Violation.DoesNotExist:
@@ -278,6 +280,9 @@ class PayFineView(APIView):
                 {'error': 'Unpaid fine not found.'},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+        if violation.is_cancelled:
+            return Response({'error': 'This violation was cancelled after an accepted appeal. No payment is required.'}, status=400)
 
         serializer = PayFineSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -344,13 +349,13 @@ class MyCommunityServiceView(generics.ListAPIView):
     permission_classes = [IsCitizen]
 
     def get_queryset(self):
-        return CommunityService.objects.filter(driver=self.request.user).order_by('-created_at')
+        return CommunityService.objects.exclude(violation__appeal__status='accepted').filter(driver=self.request.user).order_by('-created_at')
 
 class AllCommunityServiceView(generics.ListAPIView):
     """Admin/Officer: view all community service records."""
     serializer_class = CommunityServiceSerializer
     permission_classes = [IsOfficerOrAdmin]
-    queryset = CommunityService.objects.all().order_by('-created_at')
+    queryset = CommunityService.objects.exclude(violation__appeal__status='accepted').order_by('-created_at')
     filterset_fields = ['status']
     search_fields = ['driver__first_name', 'driver__last_name']
 
@@ -382,5 +387,5 @@ class CreateCommunityServiceView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         violation_id = self.request.data.get('violation_id')
-        violation = generics.get_object_or_404(Violation, id=violation_id)
+        violation = generics.get_object_or_404(Violation.objects.active(), id=violation_id)
         serializer.save(violation=violation, driver=violation.driver)

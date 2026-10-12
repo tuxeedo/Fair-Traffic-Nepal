@@ -14,6 +14,7 @@ without any source code changes.
 from datetime import timedelta
 from django.utils import timezone
 from django.conf import settings
+from django.db import transaction
 
 from .models import TrafficRule, Violation, SafetyScore, SafetyScoreHistory
 
@@ -64,7 +65,7 @@ def evaluate_violation(driver, violation_type):
     max_window = max(rule.time_window_days for rule in rules)
     window_start = timezone.now() - timedelta(days=max_window)
 
-    previous_count = Violation.objects.filter(
+    previous_count = Violation.objects.active().filter(
         driver=driver,
         violation_type=violation_type,
         created_at__gte=window_start,
@@ -132,7 +133,7 @@ def update_safety_score(driver, violation, action_taken):
 
     SafetyScoreHistory.objects.create(
         driver=driver,
-        score_change=delta,
+        score_change=new_score - previous_score,
         reason=reason,
         previous_score=previous_score,
         new_score=new_score,
@@ -142,20 +143,24 @@ def update_safety_score(driver, violation, action_taken):
     return score_obj
 
 
+@transaction.atomic
 def restore_safety_score(driver, violation):
     """
     Restore safety score points when an appeal is accepted.
     Reverses the deduction that was applied for this violation.
     """
-    history_entry = SafetyScoreHistory.objects.filter(
-        driver=driver, violation=violation
-    ).first()
+    score_obj = SafetyScore.objects.select_for_update().filter(driver=driver).first()
+    if not score_obj:
+        return
+    entries = SafetyScoreHistory.objects.filter(driver=driver, violation=violation)
+    if entries.filter(score_change__gt=0).exists():
+        return
+    history_entry = entries.filter(score_change__lt=0).first()
 
     if not history_entry:
         return
 
-    score_obj = SafetyScore.objects.get(driver=driver)
-    restore_amount = abs(history_entry.score_change)
+    restore_amount = history_entry.previous_score - history_entry.new_score
     previous_score = score_obj.current_score
     new_score = min(settings.SAFETY_SCORE_MAX, previous_score + restore_amount)
 
@@ -164,7 +169,7 @@ def restore_safety_score(driver, violation):
 
     SafetyScoreHistory.objects.create(
         driver=driver,
-        score_change=restore_amount,
+        score_change=new_score - previous_score,
         reason=f'Appeal accepted — restored points for: {violation.violation_type.name}',
         previous_score=previous_score,
         new_score=new_score,

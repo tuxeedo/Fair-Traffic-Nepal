@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { violationsAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { isCancelled, isUnpaidFine } from '../../utils/violationStatus';
 
 export default function PayFinePage() {
   const { id } = useParams();
@@ -14,6 +15,7 @@ export default function PayFinePage() {
   useEffect(() => { violationsAPI.detail(id).then(res => setViolation(res.data)).catch(() => navigate('/citizen/violations')); }, [id]);
 
   const handlePay = async () => {
+    if (!violation || !isUnpaidFine(violation)) return;
     setLoading(true);
     try { await violationsAPI.pay(id, { payment_method: method }); showToast('Payment successful!'); navigate('/citizen/violations'); }
     catch { showToast('Payment failed', 'error'); }
@@ -21,6 +23,12 @@ export default function PayFinePage() {
   };
 
   if (!violation) return <div className="skeleton" style={{ height: 200 }} />;
+
+  if (!isUnpaidFine(violation)) return <div className="glass-card" style={{ padding: 32 }}>
+    <h1 className="page-title">{isCancelled(violation) ? 'Fine cancelled' : 'No payment required'}</h1>
+    <p className="page-subtitle">{isCancelled(violation) ? 'Your appeal was accepted. This record remains only for audit history and no fine is due.' : 'This record has no outstanding fine.'}</p>
+    <button className="btn btn-primary" onClick={() => navigate('/citizen/violations')}>Back to records</button>
+  </div>;
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: 500, margin: '0 auto' }}>

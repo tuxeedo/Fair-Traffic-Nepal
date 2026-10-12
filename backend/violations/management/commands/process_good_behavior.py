@@ -19,7 +19,7 @@ class Command(BaseCommand):
                 continue
 
             # Get latest violation
-            latest_violation = Violation.objects.filter(driver=score.driver).order_by('-created_at').first()
+            latest_violation = Violation.objects.active().filter(driver=score.driver).order_by('-created_at').first()
             if not latest_violation:
                 continue
             
