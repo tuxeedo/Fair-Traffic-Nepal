@@ -172,11 +172,11 @@ export default function LoginPage() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  color: identityType === 'citizenship' ? '#e11d48' : '#334155',
-                  background: identityType === 'citizenship' ? '#fff1f2' : '#f8fafc',
+                  color: identityType === 'citizenship' ? '#2563eb' : '#334155',
+                  background: identityType === 'citizenship' ? '#eff6ff' : '#f8fafc',
                   padding: '9px 18px',
                   borderRadius: '10px',
-                  border: identityType === 'citizenship' ? '1.5px solid #f43f5e' : '1px solid #cbd5e1',
+                  border: identityType === 'citizenship' ? '1.5px solid #3b82f6' : '1px solid #cbd5e1',
                   transition: 'all 0.2s ease',
                   userSelect: 'none'
                 }}>
@@ -188,7 +188,7 @@ export default function LoginPage() {
                       setIdentityType('citizenship');
                       setIdentityNumber('');
                     }}
-                    style={{ accentColor: '#e11d48', width: '16px', height: '16px', margin: 0, cursor: 'pointer' }}
+                    style={{ accentColor: '#2563eb', width: '16px', height: '16px', margin: 0, cursor: 'pointer' }}
                   />
                   Citizenship
                 </label>
@@ -199,11 +199,11 @@ export default function LoginPage() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  color: identityType === 'nid' ? '#e11d48' : '#334155',
-                  background: identityType === 'nid' ? '#fff1f2' : '#f8fafc',
+                  color: identityType === 'nid' ? '#2563eb' : '#334155',
+                  background: identityType === 'nid' ? '#eff6ff' : '#f8fafc',
                   padding: '9px 18px',
                   borderRadius: '10px',
-                  border: identityType === 'nid' ? '1.5px solid #f43f5e' : '1px solid #cbd5e1',
+                  border: identityType === 'nid' ? '1.5px solid #3b82f6' : '1px solid #cbd5e1',
                   transition: 'all 0.2s ease',
                   userSelect: 'none'
                 }}>
@@ -215,7 +215,7 @@ export default function LoginPage() {
                       setIdentityType('nid');
                       setIdentityNumber('');
                     }}
-                    style={{ accentColor: '#e11d48', width: '16px', height: '16px', margin: 0, cursor: 'pointer' }}
+                    style={{ accentColor: '#2563eb', width: '16px', height: '16px', margin: 0, cursor: 'pointer' }}
                   />
                   National ID
                 </label>
