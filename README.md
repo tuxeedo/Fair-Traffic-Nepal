@@ -1,3 +1,6 @@
+
+
+
 ---
 title: Fair Traffic Nepal
 emoji: 🚦
@@ -57,4 +60,4 @@ All API endpoints are namespaced under `/api/v1/`:
 
 ---
 
-> Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+[> Check out the configuration reference ](https://fair-traffic-nepal.vercel.app/login)
